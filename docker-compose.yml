@@ -1,0 +1,18 @@
+services:
+  app:
+    image: ghcr.io/rhamdeew/randomtube:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - db_data:/data
+    environment:
+      DB_PATH: /data/randomtube.db
+      ADMIN_PASSWORD: changeme           # REQUIRED: change before deploying
+      ADMIN_USER: admin
+      SESSION_SECRET: change-me-in-production  # REQUIRED: use a long random secret
+      YOUTUBE_API_KEY: ""                # optional: enables YouTube import
+      PORT: "8080"
+
+volumes:
+  db_data:

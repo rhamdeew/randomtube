@@ -25,95 +25,44 @@ jobs:
       - name: Run tests
         run: go test -v ./...
 
-  build:
-    name: Build (${{ matrix.goos }}/${{ matrix.goarch }})
+  docker:
+    name: Build and Push Docker Image
     needs: test
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - goos: linux
-            goarch: amd64
-          - goos: linux
-            goarch: arm64
-          - goos: darwin
-            goarch: amd64
-          - goos: darwin
-            goarch: arm64
-          - goos: windows
-            goarch: amd64
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.25.x'
-          check-latest: true
-
-      - name: Get dependencies
-        run: go mod download
-
-      - name: Build binary
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-          CGO_ENABLED: 0
-        run: |
-          VERSION="${GITHUB_REF#refs/tags/}"
-          COMMIT="${GITHUB_SHA:0:7}"
-          BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-          if [ "${{ matrix.goos }}" = "windows" ]; then
-            BINARY="randomtube.exe"
-          else
-            BINARY="randomtube"
-          fi
-
-          go build -v \
-            -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${BUILD_DATE}" \
-            -o "dist/${BINARY}" .
-
-          ARCHIVE_NAME="randomtube_${{ matrix.goos }}_${{ matrix.goarch }}"
-          cd dist
-          if [ "${{ matrix.goos }}" = "windows" ]; then
-            zip -r "../${ARCHIVE_NAME}.zip" .
-          else
-            tar -czvf "../${ARCHIVE_NAME}.tar.gz" .
-          fi
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: randomtube_${{ matrix.goos }}_${{ matrix.goarch }}
-          path: randomtube_${{ matrix.goos }}_${{ matrix.goarch }}.*
-          if-no-files-found: error
-
-  release:
-    name: Create Release
-    needs: build
-    runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
+      packages: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          path: artifacts
-          merge-multiple: true
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: List artifacts
-        run: find artifacts -type f | sort
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
         with:
-          files: artifacts/**/*
-          draft: false
-          prerelease: false
-          generate_release_notes: true
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ github.ref_name }}
+            COMMIT=${{ github.sha }}
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
