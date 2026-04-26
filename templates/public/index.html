@@ -1,0 +1,45 @@
+{{define "content"}}
+<div class="columns is-centered">
+    <div class="column is-10 is-12-mobile">
+        {{if .Video}}
+        <div id="ytplayer"></div>
+        {{else}}
+        <div class="has-text-centered"><h3 class="is-size-4">Видео временно отсутствуют</h3></div>
+        {{end}}
+    </div>
+</div>
+
+{{if .Video}}
+<div class="columns is-centered" id="controls">
+    <div class="column is-10 is-12-mobile">
+        <div class="columns is-mobile">
+            <div class="column is-4">
+                <button class="button is-large" id="btn-like" title="Нравится">
+                    <i class="fa fa-thumbs-up"></i>
+                </button>
+            </div>
+            <div class="column is-4 has-text-centered">
+                <button class="button is-large is-primary" id="btn-next">Ещё</button>
+            </div>
+            <div class="column is-4 has-text-right">
+                <button class="button is-large" id="btn-dislike" title="Не нравится">
+                    <i class="fas fa-thumbs-down"></i>
+                </button>
+            </div>
+        </div>
+        <div class="has-text-centered is-size-7 video-meta">
+            {{if .Video.Name}}<span id="video-name">{{.Video.Name}}</span>{{end}}
+        </div>
+    </div>
+</div>
+
+<script>
+var RT = {
+    currentID: "{{.Video.YoutubeID}}",
+    catCode:   "{{.CategoryCode}}",
+    player:    null
+};
+</script>
+<script src="https://www.youtube.com/iframe_api"></script>
+{{end}}
+{{end}}

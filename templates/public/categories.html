@@ -1,0 +1,18 @@
+{{define "content"}}
+<div class="columns is-centered">
+    <div class="column is-8 is-12-mobile">
+        <h2 class="title is-4 has-text-centered">Категории</h2>
+        {{if .Categories}}
+        <div class="columns is-multiline is-centered">
+            {{range .Categories}}
+            <div class="column is-half has-text-centered">
+                <a href="/c/{{.Code}}" class="button is-fullwidth is-medium">{{.Name}}</a>
+            </div>
+            {{end}}
+        </div>
+        {{else}}
+        <p class="has-text-centered">Категории временно отсутствуют</p>
+        {{end}}
+    </div>
+</div>
+{{end}}

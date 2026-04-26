@@ -1,0 +1,41 @@
+{{define "layout"}}<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Вход — RandomTube Admin</title>
+    <link rel="stylesheet" href="/static/css/bulma.min.css">
+</head>
+<body>
+<section class="section">
+    <div class="container">
+        <div class="columns is-centered">
+            <div class="column is-4">
+                <h1 class="title has-text-centered">Вход в админку</h1>
+                {{if .Error}}
+                <div class="notification is-danger">{{.Error}}</div>
+                {{end}}
+                <form method="post" action="/admin/login">
+                    <div class="field">
+                        <label class="label">Логин</label>
+                        <div class="control">
+                            <input class="input" type="text" name="username" autofocus required>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Пароль</label>
+                        <div class="control">
+                            <input class="input" type="password" name="password" required>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <button class="button is-primary is-fullwidth" type="submit">Войти</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>
+{{end}}

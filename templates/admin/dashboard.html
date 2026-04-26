@@ -1,0 +1,60 @@
+{{define "content"}}
+<h1 class="title">Панель управления</h1>
+
+<div class="columns">
+    <div class="column is-3">
+        <div class="box has-text-centered">
+            <p class="heading">Всего видео</p>
+            <p class="title">{{.Total}}</p>
+        </div>
+    </div>
+    <div class="column is-3">
+        <div class="box has-text-centered">
+            <p class="heading">Активных</p>
+            <p class="title has-text-success">{{.Enabled}}</p>
+        </div>
+    </div>
+    <div class="column is-3">
+        <div class="box has-text-centered">
+            <p class="heading">Отключённых</p>
+            <p class="title has-text-danger">{{.Disabled}}</p>
+        </div>
+    </div>
+    <div class="column is-3">
+        <div class="box has-text-centered">
+            <p class="heading">Категорий</p>
+            <p class="title">{{len .Categories}}</p>
+        </div>
+    </div>
+</div>
+
+<div class="columns">
+    <div class="column">
+        <h2 class="subtitle">Последние задачи импорта</h2>
+        {{if .Jobs}}
+        <table class="table is-fullwidth is-striped">
+            <thead><tr><th>#</th><th>URL</th><th>Статус</th><th>Прогресс</th><th>Ошибка</th><th>Дата</th></tr></thead>
+            <tbody>
+            {{range .Jobs}}
+            <tr>
+                <td>{{.ID}}</td>
+                <td class="is-size-7" title="{{.URL}}">{{truncate .URL 60}}</td>
+                <td>
+                    {{if eq .Status "done"}}<span class="tag is-success">done</span>
+                    {{else if eq .Status "running"}}<span class="tag is-warning">running</span>
+                    {{else if eq .Status "error"}}<span class="tag is-danger">error</span>
+                    {{else}}<span class="tag">{{.Status}}</span>{{end}}
+                </td>
+                <td>{{.Imported}}{{if .Total}} / {{.Total}}{{end}}</td>
+                <td class="is-size-7 has-text-danger">{{.Error}}</td>
+                <td class="is-size-7">{{.CreatedAt}}</td>
+            </tr>
+            {{end}}
+            </tbody>
+        </table>
+        {{else}}
+        <p>Задач нет. <a href="/admin/import">Импортировать канал или плейлист</a></p>
+        {{end}}
+    </div>
+</div>
+{{end}}

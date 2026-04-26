@@ -1,0 +1,54 @@
+{{define "content"}}
+<h1 class="title">Категории</h1>
+
+<div class="columns">
+    <div class="column is-5">
+        <div class="box">
+            <h2 class="subtitle">Добавить категорию</h2>
+            <form method="post" action="/admin/categories">
+                <div class="field">
+                    <label class="label is-small">Название</label>
+                    <div class="control">
+                        <input class="input is-small" type="text" name="name" placeholder="Музыка" required>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="label is-small">Код (slug)</label>
+                    <div class="control">
+                        <input class="input is-small" type="text" name="code" placeholder="music" required>
+                    </div>
+                </div>
+                <div class="field">
+                    <button class="button is-primary is-small" type="submit">Добавить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="column is-7">
+        <table class="table is-fullwidth is-striped">
+            <thead><tr><th>ID</th><th>Название</th><th>Код</th><th>Действия</th></tr></thead>
+            <tbody>
+            {{range .Categories}}
+            <tr>
+                <td>{{.ID}}</td>
+                <td>
+                    <form method="post" action="/admin/categories/{{.ID}}" style="display:flex;gap:4px">
+                        <input class="input is-small" type="text" name="name" value="{{.Name}}" required>
+                        <input class="input is-small" type="text" name="code" value="{{.Code}}" required>
+                        <button class="button is-small is-info" type="submit">✓</button>
+                    </form>
+                </td>
+                <td>{{.Code}}</td>
+                <td>
+                    <form method="post" action="/admin/categories/{{.ID}}/delete">
+                        <button class="button is-small is-danger" type="submit"
+                            onclick="return confirm('Удалить категорию {{.Name}}?')">Удалить</button>
+                    </form>
+                </td>
+            </tr>
+            {{end}}
+            </tbody>
+        </table>
+    </div>
+</div>
+{{end}}

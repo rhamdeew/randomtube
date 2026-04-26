@@ -1,0 +1,55 @@
+/* Sticky footer — стандартный flexbox-паттерн */
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
+}
+.wrap {
+    flex: 1;
+}
+.footer {
+    padding: 1rem 1.5rem;
+    background: #f5f5f5;
+}
+
+/* Top navigation */
+.site-nav {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 2rem 0 1.5rem;
+}
+.site-nav__logo {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #363636;
+}
+.site-nav__logo:hover { color: #3273dc; }
+.site-nav__link {
+    font-size: 1.25rem;
+    color: #363636;
+}
+.site-nav__link:hover { color: #3273dc; }
+
+/* Player */
+#ytplayer {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #000;
+    display: block;
+}
+
+/* Video title below player */
+.video-meta {
+    margin-top: 0.5rem;
+    color: #888;
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    .site-nav { padding: 1rem 0; }
+    .column.is-4 { padding: 0.25rem; }
+    .button.is-large { font-size: 1rem; padding: 0.5em 1em; }
+}

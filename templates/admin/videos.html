@@ -1,0 +1,131 @@
+{{define "content"}}
+<div class="level">
+    <div class="level-left">
+        <h1 class="title">Видео</h1>
+    </div>
+    <div class="level-right">
+        <a href="/admin/import" class="button is-primary">+ Импортировать</a>
+    </div>
+</div>
+
+<form method="get" action="/admin/videos" class="box">
+    <div class="columns is-vcentered">
+        <div class="column is-3">
+            <div class="field">
+                <label class="label is-small">Категория</label>
+                <div class="control">
+                    <div class="select is-small is-fullwidth">
+                        <select name="cat">
+                            <option value="">Все категории</option>
+                            {{range .Categories}}
+                            <option value="{{.Code}}" {{if eq $.CatCode .Code}}selected{{end}}>{{.Name}}</option>
+                            {{end}}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="column is-3">
+            <div class="field">
+                <label class="label is-small">Статус</label>
+                <div class="control">
+                    <div class="select is-small is-fullwidth">
+                        <select name="enabled">
+                            <option value="">Все</option>
+                            <option value="1" {{if eq $.EnabledFilter "1"}}selected{{end}}>Активные</option>
+                            <option value="0" {{if eq $.EnabledFilter "0"}}selected{{end}}>Отключённые</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="column is-2">
+            <div class="field">
+                <label class="label is-small">&nbsp;</label>
+                <div class="control">
+                    <button class="button is-small is-info is-fullwidth" type="submit">Фильтр</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<form id="bulk-form" method="post" action="/admin/videos/action">
+<div class="level">
+    <div class="level-left">
+        <p class="is-size-7">Всего: {{.Total}}</p>
+    </div>
+    <div class="level-right">
+        <div class="buttons">
+            <button type="button" class="button is-small is-success" onclick="bulkAction('enable')">Включить</button>
+            <button type="button" class="button is-small is-warning" onclick="bulkAction('disable')">Отключить</button>
+            <button type="button" class="button is-small is-danger" onclick="bulkAction('delete')">Удалить</button>
+        </div>
+    </div>
+</div>
+
+<input type="hidden" name="action" id="bulk-action" value="">
+
+<table class="table is-fullwidth is-striped is-hoverable is-size-7">
+    <thead>
+        <tr>
+            <th><input type="checkbox" id="check-all"></th>
+            <th>ID</th>
+            <th>YouTube ID</th>
+            <th>Название</th>
+            <th>Категория</th>
+            <th>Статус</th>
+            <th>Просмотры</th>
+            <th>Рейтинг</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+    {{range .Videos}}
+    <tr class="{{if not .Enabled}}has-background-danger-light{{end}}">
+        <td><input type="checkbox" name="ids" value="{{.ID}}"></td>
+        <td>{{.ID}}</td>
+        <td>
+            <a href="https://youtu.be/{{.YoutubeID}}" target="_blank">{{.YoutubeID}}</a>
+        </td>
+        <td>{{.Name}}</td>
+        <td>{{if .CategoryID.Valid}}{{.CategoryID.Int64}}{{else}}—{{end}}</td>
+        <td>
+            {{if .Enabled}}
+            <span class="tag is-success is-small">вкл</span>
+            {{else}}
+            <span class="tag is-danger is-small">откл</span>
+            {{end}}
+        </td>
+        <td>{{.Views}}</td>
+        <td>{{.Rating}}</td>
+        <td>
+            {{if .Enabled}}
+            <button type="button" class="button is-warning is-small" onclick="singleAction('disable', {{.ID}})">Откл</button>
+            {{else}}
+            <button type="button" class="button is-success is-small" onclick="singleAction('enable', {{.ID}})">Вкл</button>
+            {{end}}
+            <button type="button" class="button is-danger is-small" onclick="singleAction('delete', {{.ID}})">Удалить</button>
+        </td>
+    </tr>
+    {{end}}
+    </tbody>
+</table>
+</form>
+
+{{if gt .Pages 1}}
+<nav class="pagination" role="navigation">
+    <ul class="pagination-list">
+        {{range paginate .Pages .Page}}
+        <li>
+            {{if eq . $.Page}}
+            <a class="pagination-link is-current">{{.}}</a>
+            {{else}}
+            <a class="pagination-link" href="?page={{.}}&cat={{$.CatCode}}&enabled={{$.EnabledFilter}}">{{.}}</a>
+            {{end}}
+        </li>
+        {{end}}
+    </ul>
+</nav>
+{{end}}
+{{end}}

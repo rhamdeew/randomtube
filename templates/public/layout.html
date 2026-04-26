@@ -1,0 +1,31 @@
+{{define "layout"}}<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>RandomTube</title>
+    <link rel="stylesheet" href="/static/css/bulma.min.css">
+    <link rel="stylesheet" href="/static/css/app.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" crossorigin="anonymous">
+    <script src="/static/js/app.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+    <div class="container">
+        <nav class="site-nav">
+            <a href="/" class="site-nav__logo">RandomTube</a>
+            <a href="/categories" class="site-nav__link">Категории</a>
+        </nav>
+    </div>
+    <div class="container">
+        {{template "content" .}}
+    </div>
+</div>
+<footer class="footer">
+    <div class="container">
+        <p>RandomTube</p>
+    </div>
+</footer>
+</body>
+</html>
+{{end}}

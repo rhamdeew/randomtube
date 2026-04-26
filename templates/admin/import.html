@@ -1,0 +1,65 @@
+{{define "content"}}
+<h1 class="title">Импорт канала / плейлиста</h1>
+
+<div class="columns">
+    <div class="column is-5">
+        <div class="box">
+            <p class="is-size-7 mb-3">
+                Вставьте ссылку на YouTube-канал или плейлист.<br>
+                Примеры: <code>https://www.youtube.com/@channelname</code>, <code>https://www.youtube.com/playlist?list=PLxxx</code>
+            </p>
+            <form method="post" action="/admin/import">
+                <div class="field">
+                    <label class="label is-small">URL канала или плейлиста</label>
+                    <div class="control">
+                        <input class="input" type="text" name="url" placeholder="https://www.youtube.com/@..." required autofocus>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="label is-small">Категория (необязательно)</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            <select name="category_id">
+                                <option value="">Без категории</option>
+                                {{range .Categories}}
+                                <option value="{{.ID}}">{{.Name}}</option>
+                                {{end}}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="field">
+                    <button class="button is-primary" type="submit">Начать импорт</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="column is-7">
+        <h2 class="subtitle">История импортов</h2>
+        {{if .Jobs}}
+        <table class="table is-fullwidth is-striped is-size-7">
+            <thead><tr><th>#</th><th>URL</th><th>Статус</th><th>Импортировано</th><th>Ошибка</th><th>Дата</th></tr></thead>
+            <tbody>
+            {{range .Jobs}}
+            <tr>
+                <td>{{.ID}}</td>
+                <td title="{{.URL}}">{{truncate .URL 40}}</td>
+                <td>
+                    {{if eq .Status "done"}}<span class="tag is-success">done</span>
+                    {{else if eq .Status "running"}}<span class="tag is-warning" data-job="{{.ID}}">running</span>
+                    {{else if eq .Status "error"}}<span class="tag is-danger">error</span>
+                    {{else}}<span class="tag">{{.Status}}</span>{{end}}
+                </td>
+                <td>{{.Imported}}{{if .Total}} / {{.Total}}{{end}}</td>
+                <td class="has-text-danger">{{.Error}}</td>
+                <td>{{.CreatedAt}}</td>
+            </tr>
+            {{end}}
+            </tbody>
+        </table>
+        {{else}}
+        <p>Импортов ещё не было.</p>
+        {{end}}
+    </div>
+</div>
+{{end}}
