@@ -50,6 +50,7 @@ var testTemplates = map[string]string{
 	"admin/videos.html":     `{{define "content"}}{{range .Videos}}<tr>{{.YoutubeID}}</tr>{{end}}{{end}}`,
 	"admin/categories.html": `{{define "content"}}{{range .Categories}}<li>{{.Name}}</li>{{end}}{{end}}`,
 	"admin/import.html":     `{{define "content"}}import form{{end}}`,
+	"admin/video_edit.html": `{{define "content"}}edit {{.Video.ID}}{{end}}`,
 }
 
 func newTestDB(t *testing.T) *sql.DB {

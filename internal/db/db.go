@@ -20,5 +20,10 @@ func Open(path string) (*sql.DB, error) {
 	if _, err = db.Exec(schema); err != nil {
 		return nil, fmt.Errorf("apply schema: %w", err)
 	}
+	// Migrate existing videos.category_id → video_categories (idempotent).
+	if _, err = db.Exec(`INSERT OR IGNORE INTO video_categories (video_id, category_id)
+	                     SELECT id, category_id FROM videos WHERE category_id IS NOT NULL`); err != nil {
+		return nil, fmt.Errorf("migrate video categories: %w", err)
+	}
 	return db, nil
 }

@@ -35,8 +35,10 @@ func TestRandomVideo_ByCategory(t *testing.T) {
 	database := newTestDB(t)
 	mustExec(t, database, `INSERT INTO categories (id, name, code) VALUES (1, 'Music', 'music')`)
 	mustExec(t, database, `INSERT INTO categories (id, name, code) VALUES (2, 'Other', 'other')`)
-	mustExec(t, database, `INSERT INTO videos (youtube_id, name, category_id, enabled) VALUES ('aaa111', 'Music Video', 1, 1)`)
-	mustExec(t, database, `INSERT INTO videos (youtube_id, name, category_id, enabled) VALUES ('bbb222', 'Other Video', 2, 1)`)
+	mustExec(t, database, `INSERT INTO videos (youtube_id, name, enabled) VALUES ('aaa111', 'Music Video', 1)`)
+	mustExec(t, database, `INSERT INTO video_categories (video_id, category_id) SELECT id, 1 FROM videos WHERE youtube_id = 'aaa111'`)
+	mustExec(t, database, `INSERT INTO videos (youtube_id, name, enabled) VALUES ('bbb222', 'Other Video', 1)`)
+	mustExec(t, database, `INSERT INTO video_categories (video_id, category_id) SELECT id, 2 FROM videos WHERE youtube_id = 'bbb222'`)
 
 	v, err := db.RandomVideo(database, "music", "")
 	if err != nil {

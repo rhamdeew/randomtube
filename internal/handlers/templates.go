@@ -22,6 +22,7 @@ var pages = []struct {
 	{"admin/videos.html", "admin/layout.html"},
 	{"admin/categories.html", "admin/layout.html"},
 	{"admin/import.html", "admin/layout.html"},
+	{"admin/video_edit.html", "admin/layout.html"},
 }
 
 func NewTemplates(fsys fs.FS, funcs template.FuncMap) (*Templates, error) {

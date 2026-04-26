@@ -18,6 +18,14 @@ CREATE TABLE IF NOT EXISTS videos (
 CREATE INDEX IF NOT EXISTS idx_videos_category ON videos(category_id);
 CREATE INDEX IF NOT EXISTS idx_videos_enabled  ON videos(enabled);
 
+CREATE TABLE IF NOT EXISTS video_categories (
+    video_id    INTEGER NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
+    category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+    PRIMARY KEY (video_id, category_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_video_categories_cat ON video_categories(category_id);
+
 CREATE TABLE IF NOT EXISTS votes (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     video_id   INTEGER NOT NULL REFERENCES videos(id) ON DELETE CASCADE,

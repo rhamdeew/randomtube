@@ -1,0 +1,56 @@
+{{define "content"}}
+<div class="level">
+    <div class="level-left">
+        <h1 class="title">Редактировать видео #{{.Video.ID}}</h1>
+    </div>
+    <div class="level-right">
+        <a href="/admin/videos" class="button is-light">← Назад</a>
+    </div>
+</div>
+
+{{if .Error}}
+<div class="notification is-danger">{{.Error}}</div>
+{{end}}
+
+<div class="box">
+    <form method="post" action="/admin/videos/{{.Video.ID}}/edit">
+        <div class="field">
+            <label class="label">YouTube ID или ссылка</label>
+            <div class="control">
+                <input class="input" type="text" name="youtube_id" value="{{.Video.YoutubeID}}" required
+                    placeholder="dQw4w9WgXcQ или https://youtu.be/...">
+            </div>
+        </div>
+        <div class="field">
+            <label class="label">Название</label>
+            <div class="control">
+                <input class="input" type="text" name="name" value="{{.Video.Name}}" placeholder="Оставьте пустым, если неизвестно">
+            </div>
+        </div>
+        <div class="field">
+            <label class="label">Категории <span class="has-text-grey is-size-7">(можно не выбирать)</span></label>
+            <div class="control">
+                {{if .AllCategories}}
+                {{range .AllCategories}}
+                <label class="checkbox mr-4">
+                    <input type="checkbox" name="category_ids" value="{{.ID}}"
+                        {{if index $.SelectedCats .ID}}checked{{end}}>
+                    {{.Name}}
+                </label>
+                {{end}}
+                {{else}}
+                <span class="has-text-grey">Нет категорий</span>
+                {{end}}
+            </div>
+        </div>
+        <div class="field is-grouped mt-4">
+            <div class="control">
+                <button class="button is-primary" type="submit">Сохранить</button>
+            </div>
+            <div class="control">
+                <a href="/admin/videos" class="button is-light">Отмена</a>
+            </div>
+        </div>
+    </form>
+</div>
+{{end}}

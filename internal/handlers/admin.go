@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -17,10 +19,10 @@ import (
 )
 
 type AdminHandler struct {
-	db       *sql.DB
-	tmpl     *Templates
-	store    *sessions.CookieStore
-	fetcher  *youtube.Fetcher
+	db      *sql.DB
+	tmpl    *Templates
+	store   *sessions.CookieStore
+	fetcher *youtube.Fetcher
 }
 
 func NewAdminHandler(database *sql.DB, tmpl *Templates, store *sessions.CookieStore, fetcher *youtube.Fetcher) *AdminHandler {
@@ -76,6 +78,9 @@ func (h *AdminHandler) Videos(w http.ResponseWriter, r *http.Request) {
 		page = 1
 	}
 	catCode := r.URL.Query().Get("cat")
+	search := r.URL.Query().Get("search")
+	sortBy := r.URL.Query().Get("sort")
+	sortDir := r.URL.Query().Get("dir")
 
 	var enabledFilter *bool
 	switch r.URL.Query().Get("enabled") {
@@ -90,6 +95,9 @@ func (h *AdminHandler) Videos(w http.ResponseWriter, r *http.Request) {
 	videos, total, _ := db.ListVideos(h.db, db.VideoFilter{
 		CategoryCode: catCode,
 		Enabled:      enabledFilter,
+		Search:       search,
+		SortBy:       sortBy,
+		SortDir:      sortDir,
 		Page:         page,
 		PerPage:      50,
 	})
@@ -97,13 +105,16 @@ func (h *AdminHandler) Videos(w http.ResponseWriter, r *http.Request) {
 	pages := (total + 49) / 50
 
 	h.tmpl.Render(w, "admin/videos.html", map[string]any{
-		"Videos":     videos,
-		"Total":      total,
-		"Page":       page,
-		"Pages":      pages,
-		"CatCode":    catCode,
+		"Videos":        videos,
+		"Total":         total,
+		"Page":          page,
+		"Pages":         pages,
+		"CatCode":       catCode,
 		"EnabledFilter": r.URL.Query().Get("enabled"),
-		"Categories": cats,
+		"Categories":    cats,
+		"Search":        search,
+		"SortBy":        sortBy,
+		"SortDir":       sortDir,
 	})
 }
 
@@ -146,6 +157,92 @@ func (h *AdminHandler) VideoAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, r.Referer(), http.StatusSeeOther)
+}
+
+func (h *AdminHandler) VideoAdd(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Redirect(w, r, "/admin/videos", http.StatusSeeOther)
+		return
+	}
+	r.ParseForm()
+
+	rawText := r.FormValue("urls")
+	catIDs := parseCategoryIDs(r.Form["category_ids"])
+
+	added := 0
+	for _, line := range strings.Split(rawText, "\n") {
+		ytID := extractYouTubeID(line)
+		if ytID == "" {
+			continue
+		}
+		if err := db.AddVideo(h.db, ytID, catIDs); err != nil {
+			continue
+		}
+		added++
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/admin/videos?added=%d", added), http.StatusSeeOther)
+}
+
+func (h *AdminHandler) VideoEdit(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil || id <= 0 {
+		http.Redirect(w, r, "/admin/videos", http.StatusSeeOther)
+		return
+	}
+
+	if r.Method == http.MethodPost {
+		r.ParseForm()
+
+		rawID := strings.TrimSpace(r.FormValue("youtube_id"))
+		ytID := extractYouTubeID(rawID)
+		if ytID == "" {
+			http.Redirect(w, r, fmt.Sprintf("/admin/videos/%d/edit?error=invalid_id", id), http.StatusSeeOther)
+			return
+		}
+		name := strings.TrimSpace(r.FormValue("name"))
+		catIDs := parseCategoryIDs(r.Form["category_ids"])
+
+		if err := db.UpdateVideo(h.db, id, ytID, name); err != nil {
+			http.Redirect(w, r, fmt.Sprintf("/admin/videos/%d/edit?error=db", id), http.StatusSeeOther)
+			return
+		}
+		if err := db.SetVideoCategories(h.db, id, catIDs); err != nil {
+			http.Redirect(w, r, fmt.Sprintf("/admin/videos/%d/edit?error=db", id), http.StatusSeeOther)
+			return
+		}
+
+		http.Redirect(w, r, "/admin/videos", http.StatusSeeOther)
+		return
+	}
+
+	video, err := db.GetVideoByID(h.db, id)
+	if err != nil || video == nil {
+		http.Redirect(w, r, "/admin/videos", http.StatusSeeOther)
+		return
+	}
+
+	cats, _ := db.ListCategories(h.db)
+
+	selectedCats := make(map[int64]bool)
+	for _, c := range video.Categories {
+		selectedCats[c.ID] = true
+	}
+
+	var errMsg string
+	switch r.URL.Query().Get("error") {
+	case "invalid_id":
+		errMsg = "Неверный YouTube ID или ссылка"
+	case "db":
+		errMsg = "Ошибка базы данных"
+	}
+
+	h.tmpl.Render(w, "admin/video_edit.html", map[string]any{
+		"Video":         video,
+		"AllCategories": cats,
+		"SelectedCats":  selectedCats,
+		"Error":         errMsg,
+	})
 }
 
 // --- Categories ---
@@ -256,6 +353,41 @@ func (h *AdminHandler) ImportJobStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 // --- helpers ---
+
+var reYTID = regexp.MustCompile(`^[A-Za-z0-9_-]{6,15}$`)
+
+func extractYouTubeID(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	if strings.Contains(raw, "youtu") {
+		if u, err := url.Parse(raw); err == nil {
+			if v := u.Query().Get("v"); reYTID.MatchString(v) {
+				return v
+			}
+			for _, part := range strings.Split(strings.TrimPrefix(u.Path, "/"), "/") {
+				if reYTID.MatchString(part) {
+					return part
+				}
+			}
+		}
+	}
+	if reYTID.MatchString(raw) {
+		return raw
+	}
+	return ""
+}
+
+func parseCategoryIDs(raw []string) []int64 {
+	var ids []int64
+	for _, s := range raw {
+		if id, err := strconv.ParseInt(s, 10, 64); err == nil && id > 0 {
+			ids = append(ids, id)
+		}
+	}
+	return ids
+}
 
 func parseIDs(raw []string) []int64 {
 	var ids []int64
