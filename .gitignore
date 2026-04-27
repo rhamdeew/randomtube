@@ -3,3 +3,4 @@ randomtube.db
 randomtube.db-shm
 randomtube.db-wal
 *.db
+docker-compose.override.yml

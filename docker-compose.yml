@@ -5,14 +5,30 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - db_data:/data
+      - ./randomtube.db:/app/randomtube.db
     environment:
-      DB_PATH: /data/randomtube.db
+      DB_PATH: /app/randomtube.db
       ADMIN_PASSWORD: changeme           # REQUIRED: change before deploying
       ADMIN_USER: admin
       SESSION_SECRET: change-me-in-production  # REQUIRED: use a long random secret
       YOUTUBE_API_KEY: ""                # optional: enables YouTube import
       PORT: "8080"
 
+  cron:
+    build:
+      context: ./cron
+      dockerfile: Dockerfile
+    container_name: randomtube_cron
+    volumes:
+      - ./randomtube.db:/app/randomtube.db:ro
+      - backup_data:/backups
+    environment:
+      S3_BUCKET: ""       # optional: S3 bucket name for offsite backup
+      S3_ACCESS_KEY: ""   # optional
+      S3_SECRET_KEY: ""   # optional
+      S3_HOST: ""         # optional: e.g. s3.amazonaws.com
+      S3_REGION: ""       # optional: e.g. us-east-1
+    restart: unless-stopped
+
 volumes:
-  db_data:
+  backup_data:
