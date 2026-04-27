@@ -95,6 +95,21 @@ cd ~/docker-compose-randomtube
 touch randomtube.db
 ```
 
+Copy the `cron` directory from this repo — it contains the Dockerfile and scripts needed to build the backup container:
+
+```bash
+cp -r /path/to/randomtube/cron ~/docker-compose-randomtube/cron
+```
+
+Or clone just that directory using sparse checkout:
+
+```bash
+git clone --filter=blob:none --sparse https://github.com/rhamdeew/randomtube.git _tmp
+git -C _tmp sparse-checkout set cron
+cp -r _tmp/cron ~/docker-compose-randomtube/cron
+rm -rf _tmp
+```
+
 Create `docker-compose.yml`:
 
 ```yaml
