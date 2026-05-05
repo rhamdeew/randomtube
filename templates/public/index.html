@@ -2,7 +2,10 @@
 <div class="columns is-centered">
     <div class="column is-10 is-12-mobile">
         {{if .Video}}
-        <div id="ytplayer"></div>
+        <iframe id="ytplayer"
+            allow="autoplay; encrypted-media; picture-in-picture"
+            allowfullscreen
+            frameborder="0"></iframe>
         {{else}}
         <div class="has-text-centered"><h3 class="is-size-4">Видео временно отсутствуют</h3></div>
         {{end}}
@@ -36,10 +39,8 @@
 <script>
 var RT = {
     currentID: "{{.Video.YoutubeID}}",
-    catCode:   "{{.CategoryCode}}",
-    player:    null
+    catCode:   "{{.CategoryCode}}"
 };
 </script>
-<script src="https://www.youtube.com/iframe_api"></script>
 {{end}}
 {{end}}
