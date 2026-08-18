@@ -59,7 +59,7 @@ func newTestDB(t *testing.T) *sql.DB {
 	if err != nil {
 		t.Fatalf("open test db: %v", err)
 	}
-	t.Cleanup(func() { database.Close() })
+	t.Cleanup(func() { _ = database.Close() })
 	return database
 }
 
@@ -180,7 +180,9 @@ func TestPublicReport_DisablesVideo(t *testing.T) {
 
 	// response should contain next video
 	var data map[string]any
-	json.NewDecoder(w.Body).Decode(&data)
+	if err := json.NewDecoder(w.Body).Decode(&data); err != nil {
+		t.Fatalf("Decode: %v", err)
+	}
 	if id, _ := data["id"].(string); id != "live1" {
 		t.Errorf("expected next video live1, got %q", id)
 	}
@@ -278,7 +280,9 @@ func TestAdminDashboard(t *testing.T) {
 
 func TestAdminLogin_WrongPassword(t *testing.T) {
 	database := newTestDB(t)
-	db.CreateAdminUser(database, "admin", "secret")
+	if err := db.CreateAdminUser(database, "admin", "secret"); err != nil {
+		t.Fatalf("CreateAdminUser: %v", err)
+	}
 
 	tmpl := newTestTemplates(t)
 	store := middleware.NewSessionStore("test-secret")
@@ -298,7 +302,9 @@ func TestAdminLogin_WrongPassword(t *testing.T) {
 
 func TestAdminLogin_CorrectPassword_Redirects(t *testing.T) {
 	database := newTestDB(t)
-	db.CreateAdminUser(database, "admin", "secret")
+	if err := db.CreateAdminUser(database, "admin", "secret"); err != nil {
+		t.Fatalf("CreateAdminUser: %v", err)
+	}
 
 	tmpl := newTestTemplates(t)
 	store := middleware.NewSessionStore("test-secret")
@@ -323,7 +329,9 @@ func TestAdminVideoAction_Disable(t *testing.T) {
 	seedVideo(t, database, "v1", "V1", 1)
 
 	var videoID int64
-	database.QueryRow("SELECT id FROM videos WHERE youtube_id = 'v1'").Scan(&videoID)
+	if err := database.QueryRow("SELECT id FROM videos WHERE youtube_id = 'v1'").Scan(&videoID); err != nil {
+		t.Fatalf("Scan: %v", err)
+	}
 
 	tmpl := newTestTemplates(t)
 	store := middleware.NewSessionStore("test-secret")

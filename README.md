@@ -3,7 +3,7 @@
 ![CI/CD Status](https://github.com/rhamdeew/randomtube/actions/workflows/release.yml/badge.svg)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/rhamdeew/randomtube)](https://github.com/rhamdeew/randomtube/releases/latest)
 [![GitHub license](https://img.shields.io/github/license/rhamdeew/randomtube)](https://github.com/rhamdeew/randomtube/blob/master/LICENSE)
-[![Go Report Card](https://goreportcard.com/badge/github.com/rhamdeew/randomtube)](https://goreportcard.com/report/github.com/rhamdeew/randomtube)
+[![Lint](https://github.com/rhamdeew/randomtube/actions/workflows/lint.yml/badge.svg)](https://github.com/rhamdeew/randomtube/actions/workflows/lint.yml)
 [![GitHub stars](https://img.shields.io/github/stars/rhamdeew/randomtube)](https://github.com/rhamdeew/randomtube/stargazers)
 
 A web app that serves random YouTube videos. Users can browse videos, vote (like/dislike), and report inappropriate content. Admins manage videos and import them from YouTube playlists or channels via a built-in interface.

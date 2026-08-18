@@ -29,13 +29,13 @@ func (h *PublicHandler) serveRandomVideo(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	db.IncrementViews(h.db, video.ID)
+	_ = db.IncrementViews(h.db, video.ID)
 
 	cats, _ := db.ListCategories(h.db)
 	h.templates.Render(w, "public/index.html", map[string]any{
-		"Video":      video,
+		"Video":        video,
 		"CategoryCode": catCode,
-		"Categories": cats,
+		"Categories":   cats,
 	})
 }
 
@@ -65,9 +65,9 @@ func (h *PublicHandler) Next(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db.IncrementViews(h.db, video.ID)
+	_ = db.IncrementViews(h.db, video.ID)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"id":    video.YoutubeID,
 		"name":  video.Name,
 		"views": video.Views + 1,
@@ -86,7 +86,10 @@ func (h *PublicHandler) Report(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db.DisableVideo(h.db, youtubeID)
+	if err := db.DisableVideo(h.db, youtubeID); err != nil {
+		jsonError(w, "Ошибка сервера", http.StatusInternalServerError)
+		return
+	}
 
 	// Return next video automatically
 	catCode := r.FormValue("cat")
@@ -96,9 +99,9 @@ func (h *PublicHandler) Report(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db.IncrementViews(h.db, video.ID)
+	_ = db.IncrementViews(h.db, video.ID)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"id":   video.YoutubeID,
 		"name": video.Name,
 	})
@@ -158,10 +161,10 @@ func realIP(r *http.Request) string {
 func jsonError(w http.ResponseWriter, msg string, code int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(map[string]string{"error": msg})
+	_ = json.NewEncoder(w).Encode(map[string]string{"error": msg})
 }
 
 func jsonOK(w http.ResponseWriter, msg string) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"message": msg})
+	_ = json.NewEncoder(w).Encode(map[string]string{"message": msg})
 }

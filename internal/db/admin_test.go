@@ -24,7 +24,9 @@ func TestCreateAndCheckAdminPassword(t *testing.T) {
 
 func TestCheckAdminPassword_Wrong(t *testing.T) {
 	database := newTestDB(t)
-	db.CreateAdminUser(database, "admin", "secret")
+	if err := db.CreateAdminUser(database, "admin", "secret"); err != nil {
+		t.Fatalf("CreateAdminUser: %v", err)
+	}
 
 	ok, _ := db.CheckAdminPassword(database, "admin", "wrong")
 	if ok {
@@ -46,8 +48,12 @@ func TestCheckAdminPassword_UnknownUser(t *testing.T) {
 
 func TestCreateAdminUser_Upsert(t *testing.T) {
 	database := newTestDB(t)
-	db.CreateAdminUser(database, "admin", "old")
-	db.CreateAdminUser(database, "admin", "new")
+	if err := db.CreateAdminUser(database, "admin", "old"); err != nil {
+		t.Fatalf("CreateAdminUser: %v", err)
+	}
+	if err := db.CreateAdminUser(database, "admin", "new"); err != nil {
+		t.Fatalf("CreateAdminUser: %v", err)
+	}
 
 	ok, _ := db.CheckAdminPassword(database, "admin", "new")
 	if !ok {

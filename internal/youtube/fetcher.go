@@ -45,7 +45,6 @@ var (
 	reChannelID  = regexp.MustCompile(`/channel/([A-Za-z0-9_-]+)`)
 	reHandle     = regexp.MustCompile(`/@([A-Za-z0-9_.-]+)`)
 	reUserPath   = regexp.MustCompile(`/user/([A-Za-z0-9_.-]+)`)
-	reVideoID    = regexp.MustCompile(`(?:v=|youtu\.be/)([A-Za-z0-9_-]{11})`)
 )
 
 func ParseURL(rawURL string) (*Source, error) {
@@ -197,7 +196,7 @@ func (f *Fetcher) get(ctx context.Context, endpoint string, params url.Values) (
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -215,23 +214,23 @@ func RunImport(ctx context.Context, database *sql.DB, fetcher *Fetcher, jobID in
 
 	src, err := ParseURL(rawURL)
 	if err != nil {
-		dbpkg.FinishImportJob(database, jobID, err.Error())
+		_ = dbpkg.FinishImportJob(database, jobID, err.Error())
 		return
 	}
 
 	imported := 0
 	_, fetchErr := fetcher.FetchAll(ctx, src, func(batch []VideoItem) {
 		for _, item := range batch {
-			dbpkg.UpsertVideo(database, item.YoutubeID, item.Title, categoryID)
+			_ = dbpkg.UpsertVideo(database, item.YoutubeID, item.Title, categoryID)
 			imported++
 		}
-		dbpkg.UpdateImportJobProgress(database, jobID, 0, imported)
+		_ = dbpkg.UpdateImportJobProgress(database, jobID, 0, imported)
 	})
 
 	errMsg := ""
 	if fetchErr != nil {
 		errMsg = fetchErr.Error()
 	}
-	dbpkg.UpdateImportJobProgress(database, jobID, imported, imported)
-	dbpkg.FinishImportJob(database, jobID, errMsg)
+	_ = dbpkg.UpdateImportJobProgress(database, jobID, imported, imported)
+	_ = dbpkg.FinishImportJob(database, jobID, errMsg)
 }

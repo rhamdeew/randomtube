@@ -119,7 +119,7 @@ func ListVideos(db *sql.DB, f VideoFilter) ([]Video, int, error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var videos []Video
 	var ids []int64
@@ -222,7 +222,7 @@ func SetVideoCategories(db *sql.DB, videoID int64, categoryIDs []int64) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 	if _, err = tx.Exec("DELETE FROM video_categories WHERE video_id = ?", videoID); err != nil {
 		return err
 	}
@@ -241,7 +241,7 @@ func AddVideo(db *sql.DB, youtubeID string, categoryIDs []int64) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	if _, err = tx.Exec(`INSERT INTO videos (youtube_id, name) VALUES (?, '')
 	                     ON CONFLICT(youtube_id) DO NOTHING`, youtubeID); err != nil {
@@ -266,7 +266,7 @@ func UpsertVideo(db *sql.DB, youtubeID, name string, categoryID *int64) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	if _, err = tx.Exec(`INSERT INTO videos (youtube_id, name) VALUES (?, ?)
 	                     ON CONFLICT(youtube_id) DO NOTHING`, youtubeID, name); err != nil {
@@ -306,7 +306,7 @@ func BulkSetEnabled(db *sql.DB, ids []int64, enabled bool) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 	for _, id := range ids {
 		if _, err = tx.Exec("UPDATE videos SET enabled = ? WHERE id = ?", v, id); err != nil {
 			return fmt.Errorf("update video %d: %w", id, err)
@@ -320,7 +320,7 @@ func BulkDelete(db *sql.DB, ids []int64) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 	for _, id := range ids {
 		if _, err = tx.Exec("DELETE FROM videos WHERE id = ?", id); err != nil {
 			return fmt.Errorf("delete video %d: %w", id, err)
@@ -338,7 +338,7 @@ func getVideoCategories(db *sql.DB, videoID int64) ([]Category, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var cats []Category
 	for rows.Next() {
 		var c Category
@@ -373,7 +373,7 @@ func loadCategoriesForVideos(db *sql.DB, videoIDs []int64) (map[int64][]Category
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	result := make(map[int64][]Category)
 	for rows.Next() {

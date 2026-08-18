@@ -17,7 +17,9 @@ func TestCreateAndListCategories(t *testing.T) {
 		t.Fatal("expected non-zero ID")
 	}
 
-	db.CreateCategory(database, "Other", "other")
+	if _, err := db.CreateCategory(database, "Other", "other"); err != nil {
+		t.Fatalf("CreateCategory: %v", err)
+	}
 
 	cats, err := db.ListCategories(database)
 	if err != nil {
@@ -30,7 +32,9 @@ func TestCreateAndListCategories(t *testing.T) {
 
 func TestGetCategoryByCode(t *testing.T) {
 	database := newTestDB(t)
-	db.CreateCategory(database, "Music", "music")
+	if _, err := db.CreateCategory(database, "Music", "music"); err != nil {
+		t.Fatalf("CreateCategory: %v", err)
+	}
 
 	cat, err := db.GetCategoryByCode(database, "music")
 	if err != nil {
@@ -76,7 +80,9 @@ func TestDeleteCategory(t *testing.T) {
 
 func TestCategoryUniqueCode(t *testing.T) {
 	database := newTestDB(t)
-	db.CreateCategory(database, "Music", "music")
+	if _, err := db.CreateCategory(database, "Music", "music"); err != nil {
+		t.Fatalf("CreateCategory: %v", err)
+	}
 
 	_, err := db.CreateCategory(database, "Music 2", "music")
 	if err == nil {

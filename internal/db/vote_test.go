@@ -23,7 +23,9 @@ func TestCanVote_TwiceInRow(t *testing.T) {
 	database := newTestDB(t)
 	mustExec(t, database, `INSERT INTO videos (youtube_id, name, enabled) VALUES ('aaa111', 'V', 1)`)
 
-	db.AddVote(database, 1, "1.2.3.4", "UA", 1)
+	if err := db.AddVote(database, 1, "1.2.3.4", "UA", 1); err != nil {
+		t.Fatalf("AddVote: %v", err)
+	}
 
 	ok, err := db.CanVote(database, 1, "1.2.3.4")
 	if err != nil {
@@ -38,7 +40,9 @@ func TestCanVote_DifferentIP(t *testing.T) {
 	database := newTestDB(t)
 	mustExec(t, database, `INSERT INTO videos (youtube_id, name, enabled) VALUES ('aaa111', 'V', 1)`)
 
-	db.AddVote(database, 1, "1.2.3.4", "UA", 1)
+	if err := db.AddVote(database, 1, "1.2.3.4", "UA", 1); err != nil {
+		t.Fatalf("AddVote: %v", err)
+	}
 
 	ok, _ := db.CanVote(database, 1, "9.9.9.9")
 	if !ok {
@@ -50,9 +54,15 @@ func TestAddVote_UpdatesRating(t *testing.T) {
 	database := newTestDB(t)
 	mustExec(t, database, `INSERT INTO videos (youtube_id, name, enabled) VALUES ('aaa111', 'V', 1)`)
 
-	db.AddVote(database, 1, "1.1.1.1", "UA", 1)
-	db.AddVote(database, 1, "2.2.2.2", "UA", 1)
-	db.AddVote(database, 1, "3.3.3.3", "UA", -1)
+	if err := db.AddVote(database, 1, "1.1.1.1", "UA", 1); err != nil {
+		t.Fatalf("AddVote: %v", err)
+	}
+	if err := db.AddVote(database, 1, "2.2.2.2", "UA", 1); err != nil {
+		t.Fatalf("AddVote: %v", err)
+	}
+	if err := db.AddVote(database, 1, "3.3.3.3", "UA", -1); err != nil {
+		t.Fatalf("AddVote: %v", err)
+	}
 
 	v, _ := db.GetVideoByYoutubeID(database, "aaa111")
 	if v.Rating != 1 {

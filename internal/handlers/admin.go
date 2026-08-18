@@ -42,7 +42,10 @@ func (h *AdminHandler) Login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		middleware.SetAuthenticated(h.store, w, r)
+		if err := middleware.SetAuthenticated(h.store, w, r); err != nil {
+			h.tmpl.Render(w, "admin/login.html", map[string]any{"Error": "Не удалось создать сессию"})
+			return
+		}
 		http.Redirect(w, r, "/admin/", http.StatusSeeOther)
 		return
 	}
@@ -50,7 +53,10 @@ func (h *AdminHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AdminHandler) Logout(w http.ResponseWriter, r *http.Request) {
-	middleware.Logout(h.store, w, r)
+	if err := middleware.Logout(h.store, w, r); err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
 	http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
 }
 
@@ -123,7 +129,10 @@ func (h *AdminHandler) VideoAction(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		jsonError(w, "invalid form", http.StatusBadRequest)
+		return
+	}
 
 	action := r.FormValue("action")
 	ids := parseIDs(r.Form["ids"])
@@ -153,7 +162,7 @@ func (h *AdminHandler) VideoAction(w http.ResponseWriter, r *http.Request) {
 
 	if isAJAX(r) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]bool{"ok": true})
+		_ = json.NewEncoder(w).Encode(map[string]bool{"ok": true})
 		return
 	}
 	http.Redirect(w, r, r.Referer(), http.StatusSeeOther)
@@ -164,7 +173,10 @@ func (h *AdminHandler) VideoAdd(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin/videos", http.StatusSeeOther)
 		return
 	}
-	r.ParseForm()
+	if err := r.ParseForm(); err != nil {
+		http.Redirect(w, r, "/admin/videos", http.StatusSeeOther)
+		return
+	}
 
 	rawText := r.FormValue("urls")
 	catIDs := parseCategoryIDs(r.Form["category_ids"])
@@ -192,7 +204,10 @@ func (h *AdminHandler) VideoEdit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == http.MethodPost {
-		r.ParseForm()
+		if err := r.ParseForm(); err != nil {
+			http.Redirect(w, r, fmt.Sprintf("/admin/videos/%d/edit?error=db", id), http.StatusSeeOther)
+			return
+		}
 
 		rawID := strings.TrimSpace(r.FormValue("youtube_id"))
 		ytID := extractYouTubeID(rawID)
@@ -263,7 +278,10 @@ func (h *AdminHandler) CategoryCreate(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin/categories?error=empty", http.StatusSeeOther)
 		return
 	}
-	db.CreateCategory(h.db, name, code)
+	if _, err := db.CreateCategory(h.db, name, code); err != nil {
+		http.Redirect(w, r, "/admin/categories?error=db", http.StatusSeeOther)
+		return
+	}
 	http.Redirect(w, r, "/admin/categories", http.StatusSeeOther)
 }
 
@@ -275,7 +293,10 @@ func (h *AdminHandler) CategoryUpdate(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	name := strings.TrimSpace(r.FormValue("name"))
 	code := strings.TrimSpace(r.FormValue("code"))
-	db.UpdateCategory(h.db, id, name, code)
+	if err := db.UpdateCategory(h.db, id, name, code); err != nil {
+		http.Redirect(w, r, "/admin/categories?error=db", http.StatusSeeOther)
+		return
+	}
 	http.Redirect(w, r, "/admin/categories", http.StatusSeeOther)
 }
 
@@ -285,7 +306,10 @@ func (h *AdminHandler) CategoryDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id, _ := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	db.DeleteCategory(h.db, id)
+	if err := db.DeleteCategory(h.db, id); err != nil {
+		http.Redirect(w, r, "/admin/categories?error=db", http.StatusSeeOther)
+		return
+	}
 	http.Redirect(w, r, "/admin/categories", http.StatusSeeOther)
 }
 
@@ -343,7 +367,7 @@ func (h *AdminHandler) ImportJobStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"id":       job.ID,
 		"status":   job.Status,
 		"total":    job.Total,

@@ -6,12 +6,6 @@ import (
 	"randomtube/internal/db"
 )
 
-func seedData(t *testing.T, database interface {
-	Exec(string, ...any) (interface{ LastInsertId() (int64, error) }, error)
-}) {
-	t.Helper()
-}
-
 func TestRandomVideo_NoFilter(t *testing.T) {
 	database := newTestDB(t)
 	mustExec(t, database, `INSERT INTO categories (id, name, code) VALUES (1, 'Music', 'music')`)
@@ -181,10 +175,12 @@ func TestBulkSetEnabled(t *testing.T) {
 	rows, _ := database.Query("SELECT id FROM videos")
 	for rows.Next() {
 		var id int64
-		rows.Scan(&id)
+		if err := rows.Scan(&id); err != nil {
+			t.Fatalf("Scan: %v", err)
+		}
 		ids = append(ids, id)
 	}
-	rows.Close()
+	_ = rows.Close()
 
 	if err := db.BulkSetEnabled(database, ids, false); err != nil {
 		t.Fatalf("BulkSetEnabled: %v", err)

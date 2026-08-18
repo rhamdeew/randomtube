@@ -13,7 +13,7 @@ func ListCategories(db *sql.DB) ([]Category, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var cats []Category
 	for rows.Next() {

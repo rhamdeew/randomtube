@@ -44,7 +44,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("open db: %v", err)
 	}
-	defer database.Close()
+	defer func() { _ = database.Close() }()
 
 	if err := dbpkg.CreateAdminUser(database, *adminUser, *adminPw); err != nil {
 		log.Fatalf("create admin user: %v", err)

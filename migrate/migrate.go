@@ -24,7 +24,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("open db: %v", err)
 	}
-	defer database.Close()
+	defer func() { _ = database.Close() }()
 
 	content, err := os.ReadFile(*dumpFile)
 	if err != nil {
@@ -169,12 +169,12 @@ func parseVideoValues(s string) []videoRow {
 			continue
 		}
 		rows = append(rows, videoRow{
-			id:        id,
-			youtubeID: ytID,
-			statusID:  statusID,
-			name:      name,
-			rating:    rating,
-			views:     views,
+			id:         id,
+			youtubeID:  ytID,
+			statusID:   statusID,
+			name:       name,
+			rating:     rating,
+			views:      views,
 			categoryID: catID,
 		})
 	}
@@ -265,7 +265,7 @@ func importVideos(database *sql.DB, videos []videoRow) int {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	stmt, err := tx.Prepare(`INSERT OR IGNORE INTO videos
 		(id, youtube_id, name, category_id, enabled, views, rating)
@@ -273,7 +273,7 @@ func importVideos(database *sql.DB, videos []videoRow) int {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer stmt.Close()
+	defer func() { _ = stmt.Close() }()
 
 	count := 0
 	for _, v := range videos {

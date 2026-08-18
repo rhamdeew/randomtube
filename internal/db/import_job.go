@@ -55,7 +55,7 @@ func ListImportJobs(db *sql.DB) ([]ImportJob, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var jobs []ImportJob
 	for rows.Next() {
