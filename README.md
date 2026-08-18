@@ -8,6 +8,8 @@
 
 A web app that serves random YouTube videos. Users can browse videos, vote (like/dislike), and report inappropriate content. Admins manage videos and import them from YouTube playlists or channels via a built-in interface.
 
+<img width="3024" height="1886" alt="randomtube_screenshot" src="https://github.com/user-attachments/assets/34e20f27-e550-4108-bf5e-e4cec7eb543a" />
+
 ## Stack
 
 - **Go** — single binary, standard library `net/http`
