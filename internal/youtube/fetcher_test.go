@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"randomtube/internal/youtube"
@@ -11,50 +12,52 @@ import (
 
 func TestParseURL(t *testing.T) {
 	tests := []struct {
-		input    string
-		wantType youtube.SourceType
-		wantID   string
-		wantErr  bool
+		input       string
+		wantType    youtube.SourceType
+		wantID      string
+		wantVideoID string
+		wantErr     bool
 	}{
 		{
-			"https://www.youtube.com/playlist?list=PLxxx123",
-			youtube.SourcePlaylist, "PLxxx123", false,
+			input:    "https://www.youtube.com/playlist?list=PLxxx123",
+			wantType: youtube.SourcePlaylist, wantID: "PLxxx123",
 		},
 		{
-			"https://www.youtube.com/watch?v=abc&list=PLyyy456",
-			youtube.SourcePlaylist, "PLyyy456", false,
+			input:    "https://www.youtube.com/watch?v=abc&list=PLyyy456",
+			wantType: youtube.SourcePlaylist, wantID: "PLyyy456",
+			wantVideoID: "abc",
 		},
 		{
-			"https://www.youtube.com/channel/UCabc123",
-			youtube.SourceChannel, "UCabc123", false,
+			input:    "https://www.youtube.com/channel/UCabc123",
+			wantType: youtube.SourceChannel, wantID: "UCabc123",
 		},
 		{
-			"https://www.youtube.com/@mychannel",
-			youtube.SourceChannel, "@mychannel", false,
+			input:    "https://www.youtube.com/@mychannel",
+			wantType: youtube.SourceChannel, wantID: "@mychannel",
 		},
 		{
-			"https://www.youtube.com/user/someuser",
-			youtube.SourceChannel, "someuser", false,
+			input:    "https://www.youtube.com/user/someuser",
+			wantType: youtube.SourceChannel, wantID: "someuser",
 		},
 		{
-			"UCabc123",
-			youtube.SourceChannel, "UCabc123", false,
+			input:    "UCabc123",
+			wantType: youtube.SourceChannel, wantID: "UCabc123",
 		},
 		{
-			"PLabc123",
-			youtube.SourcePlaylist, "PLabc123", false,
+			input:    "PLabc123",
+			wantType: youtube.SourcePlaylist, wantID: "PLabc123",
 		},
 		{
-			"UUabc123",
-			youtube.SourcePlaylist, "UUabc123", false,
+			input:    "UUabc123",
+			wantType: youtube.SourcePlaylist, wantID: "UUabc123",
 		},
 		{
-			"https://example.com/not-youtube",
-			0, "", true,
+			input:   "https://example.com/not-youtube",
+			wantErr: true,
 		},
 		{
-			"just-some-text",
-			0, "", true,
+			input:   "just-some-text",
+			wantErr: true,
 		},
 	}
 
@@ -76,7 +79,55 @@ func TestParseURL(t *testing.T) {
 			if src.ID != tt.wantID {
 				t.Errorf("id: got %q, want %q", src.ID, tt.wantID)
 			}
+			if src.VideoID != tt.wantVideoID {
+				t.Errorf("videoID: got %q, want %q", src.VideoID, tt.wantVideoID)
+			}
 		})
+	}
+}
+
+func TestFetchAll_Playlist_IncludesSeedVideo(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case strings.Contains(r.URL.Path, "/playlistItems"):
+			_, _ = w.Write([]byte(`{"items":[
+				{"snippet":{"title":"Playlist Video","resourceId":{"videoId":"plvid1"}}}
+			]}`))
+		case strings.Contains(r.URL.Path, "/videos"):
+			_, _ = w.Write([]byte(`{"items":[{"id":"seedvid1","snippet":{"title":"Seed Video"}}]}`))
+		}
+	}))
+	defer server.Close()
+
+	f := youtube.New("test-key")
+	f.BaseURL = server.URL
+
+	src, err := youtube.ParseURL("https://www.youtube.com/watch?v=seedvid1&list=PLxxx123")
+	if err != nil {
+		t.Fatalf("ParseURL: %v", err)
+	}
+
+	var got []youtube.VideoItem
+	total, err := f.FetchAll(context.Background(), src, func(batch []youtube.VideoItem) {
+		got = append(got, batch...)
+	})
+	if err != nil {
+		t.Fatalf("FetchAll: %v", err)
+	}
+	if total != 2 {
+		t.Fatalf("expected 2 videos, got %d", total)
+	}
+
+	ids := map[string]string{}
+	for _, item := range got {
+		ids[item.YoutubeID] = item.Title
+	}
+	if ids["plvid1"] != "Playlist Video" {
+		t.Errorf("missing playlist video, got %+v", got)
+	}
+	if ids["seedvid1"] != "Seed Video" {
+		t.Errorf("missing seed video, got %+v", got)
 	}
 }
 

@@ -42,10 +42,15 @@ const (
 type Source struct {
 	Type SourceType
 	ID   string
+	// VideoID is the seed video from a "watch?v=...&list=..." URL. It isn't
+	// necessarily a member of the playlist (e.g. YouTube Mix playlists don't
+	// list it), so it's fetched and imported separately alongside the playlist.
+	VideoID string
 }
 
 var (
 	rePlaylistID = regexp.MustCompile(`[?&]list=([A-Za-z0-9_-]+)`)
+	reVideoID    = regexp.MustCompile(`[?&]v=([A-Za-z0-9_-]+)`)
 	reChannelID  = regexp.MustCompile(`/channel/([A-Za-z0-9_-]+)`)
 	reHandle     = regexp.MustCompile(`/@([A-Za-z0-9_.-]+)`)
 	reUserPath   = regexp.MustCompile(`/user/([A-Za-z0-9_.-]+)`)
@@ -53,7 +58,11 @@ var (
 
 func ParseURL(rawURL string) (*Source, error) {
 	if m := rePlaylistID.FindStringSubmatch(rawURL); m != nil {
-		return &Source{Type: SourcePlaylist, ID: m[1]}, nil
+		src := &Source{Type: SourcePlaylist, ID: m[1]}
+		if vm := reVideoID.FindStringSubmatch(rawURL); vm != nil {
+			src.VideoID = vm[1]
+		}
+		return src, nil
 	}
 	if m := reChannelID.FindStringSubmatch(rawURL); m != nil {
 		return &Source{Type: SourceChannel, ID: m[1]}, nil
@@ -86,13 +95,39 @@ func (f *Fetcher) FetchAll(ctx context.Context, src *Source, onBatch func([]Vide
 		if strings.HasPrefix(src.ID, "RD") {
 			maxItems = maxMixItems
 		}
-		return f.fetchPlaylist(ctx, src.ID, maxItems, onBatch)
+		total, err := f.fetchPlaylist(ctx, src.ID, maxItems, onBatch)
+		if err != nil {
+			return total, err
+		}
+		if src.VideoID != "" {
+			n, err := f.fetchSeedVideo(ctx, src.VideoID, onBatch)
+			total += n
+			if err != nil {
+				return total, err
+			}
+		}
+		return total, nil
 	}
 	playlistID, err := f.channelUploadsPlaylist(ctx, src.ID)
 	if err != nil {
 		return 0, err
 	}
 	return f.fetchPlaylist(ctx, playlistID, 0, onBatch)
+}
+
+// fetchSeedVideo fetches the "watch?v=..." video that accompanied a playlist
+// URL and reports it through onBatch, same as a playlist item would be.
+func (f *Fetcher) fetchSeedVideo(ctx context.Context, videoID string, onBatch func([]VideoItem)) (int, error) {
+	titles, err := f.FetchVideosInfo(ctx, []string{videoID})
+	if err != nil {
+		return 0, err
+	}
+	title, ok := titles[videoID]
+	if !ok {
+		return 0, nil
+	}
+	onBatch([]VideoItem{{YoutubeID: videoID, Title: title}})
+	return 1, nil
 }
 
 // FetchVideosInfo looks up titles for the given YouTube video IDs and
