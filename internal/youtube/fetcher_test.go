@@ -1,6 +1,9 @@
 package youtube_test
 
 import (
+	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"randomtube/internal/youtube"
@@ -74,5 +77,27 @@ func TestParseURL(t *testing.T) {
 				t.Errorf("id: got %q, want %q", src.ID, tt.wantID)
 			}
 		})
+	}
+}
+
+func TestFetchVideosInfo_ExistingAndMissing(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"items":[{"id":"exists1","snippet":{"title":"Existing Video"}}]}`))
+	}))
+	defer server.Close()
+
+	f := youtube.New("test-key")
+	f.BaseURL = server.URL
+
+	titles, err := f.FetchVideosInfo(context.Background(), []string{"exists1", "missing1"})
+	if err != nil {
+		t.Fatalf("FetchVideosInfo: %v", err)
+	}
+	if got, want := titles["exists1"], "Existing Video"; got != want {
+		t.Errorf("titles[exists1] = %q, want %q", got, want)
+	}
+	if _, ok := titles["missing1"]; ok {
+		t.Error("expected missing1 to be absent from titles")
 	}
 }

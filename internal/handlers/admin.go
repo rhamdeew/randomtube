@@ -121,6 +121,9 @@ func (h *AdminHandler) Videos(w http.ResponseWriter, r *http.Request) {
 		"Search":        search,
 		"SortBy":        sortBy,
 		"SortDir":       sortDir,
+		"Added":         r.URL.Query().Get("added"),
+		"Skipped":       r.URL.Query().Get("skipped"),
+		"AddError":      r.URL.Query().Get("error"),
 	})
 }
 
@@ -181,19 +184,39 @@ func (h *AdminHandler) VideoAdd(w http.ResponseWriter, r *http.Request) {
 	rawText := r.FormValue("urls")
 	catIDs := parseCategoryIDs(r.Form["category_ids"])
 
-	added := 0
+	var ytIDs []string
 	for _, line := range strings.Split(rawText, "\n") {
-		ytID := extractYouTubeID(line)
-		if ytID == "" {
+		if ytID := extractYouTubeID(line); ytID != "" {
+			ytIDs = append(ytIDs, ytID)
+		}
+	}
+
+	titles := make(map[string]string)
+	skipped := 0
+	if h.fetcher != nil && len(ytIDs) > 0 {
+		info, err := h.fetcher.FetchVideosInfo(r.Context(), ytIDs)
+		if err != nil {
+			http.Redirect(w, r, "/admin/videos?error=youtube", http.StatusSeeOther)
+			return
+		}
+		titles = info
+	}
+
+	added := 0
+	for _, ytID := range ytIDs {
+		name, exists := titles[ytID]
+		if h.fetcher != nil && !exists {
+			// Video not returned by YouTube: private, deleted, or invalid ID.
+			skipped++
 			continue
 		}
-		if err := db.AddVideo(h.db, ytID, catIDs); err != nil {
+		if err := db.AddVideo(h.db, ytID, name, catIDs); err != nil {
 			continue
 		}
 		added++
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/admin/videos?added=%d", added), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/admin/videos?added=%d&skipped=%d", added, skipped), http.StatusSeeOther)
 }
 
 func (h *AdminHandler) VideoEdit(w http.ResponseWriter, r *http.Request) {

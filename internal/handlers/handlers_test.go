@@ -15,6 +15,7 @@ import (
 	"randomtube/internal/db"
 	"randomtube/internal/handlers"
 	"randomtube/internal/middleware"
+	"randomtube/internal/youtube"
 )
 
 func newTestTemplates(t *testing.T) *handlers.Templates {
@@ -408,6 +409,70 @@ func TestAdminLogin_CorrectPassword_Redirects(t *testing.T) {
 	}
 	if loc := w.Result().Header.Get("Location"); loc != "/admin/" {
 		t.Errorf("expected redirect to /admin/, got %q", loc)
+	}
+}
+
+func TestAdminVideoAdd_NoFetcher_AddsWithoutNameCheck(t *testing.T) {
+	database := newTestDB(t)
+	tmpl := newTestTemplates(t)
+	store := middleware.NewSessionStore("test-secret")
+	h := handlers.NewAdminHandler(database, tmpl, store, nil)
+
+	form := url.Values{"urls": {"https://youtu.be/dQw4w9WgXcQ"}}
+	req := httptest.NewRequest(http.MethodPost, "/admin/videos/add", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	h.VideoAdd(w, req)
+
+	if loc := w.Result().Header.Get("Location"); loc != "/admin/videos?added=1&skipped=0" {
+		t.Errorf("expected added=1&skipped=0, got %q", loc)
+	}
+
+	v, err := db.GetVideoByYoutubeID(database, "dQw4w9WgXcQ")
+	if err != nil || v == nil {
+		t.Fatalf("expected video to be added, err=%v", err)
+	}
+	if v.Name != "" {
+		t.Errorf("expected empty name without fetcher, got %q", v.Name)
+	}
+}
+
+func TestAdminVideoAdd_WithFetcher_SetsNameAndSkipsMissing(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"items":[{"id":"exists1","snippet":{"title":"Real Title"}}]}`))
+	}))
+	defer server.Close()
+
+	fetcher := youtube.New("test-key")
+	fetcher.BaseURL = server.URL
+
+	database := newTestDB(t)
+	tmpl := newTestTemplates(t)
+	store := middleware.NewSessionStore("test-secret")
+	h := handlers.NewAdminHandler(database, tmpl, store, fetcher)
+
+	form := url.Values{"urls": {"exists1\nmissing1"}}
+	req := httptest.NewRequest(http.MethodPost, "/admin/videos/add", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	h.VideoAdd(w, req)
+
+	if loc := w.Result().Header.Get("Location"); loc != "/admin/videos?added=1&skipped=1" {
+		t.Errorf("expected added=1&skipped=1, got %q", loc)
+	}
+
+	v, err := db.GetVideoByYoutubeID(database, "exists1")
+	if err != nil || v == nil {
+		t.Fatalf("expected exists1 to be added, err=%v", err)
+	}
+	if v.Name != "Real Title" {
+		t.Errorf("expected name %q, got %q", "Real Title", v.Name)
+	}
+
+	missing, _ := db.GetVideoByYoutubeID(database, "missing1")
+	if missing != nil {
+		t.Error("expected missing1 not to be added")
 	}
 }
 

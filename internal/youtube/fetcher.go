@@ -22,10 +22,14 @@ type VideoItem struct {
 type Fetcher struct {
 	apiKey string
 	client *http.Client
+	// BaseURL is the YouTube Data API base, overridable in tests.
+	BaseURL string
 }
 
+const defaultBaseURL = "https://www.googleapis.com/youtube/v3"
+
 func New(apiKey string) *Fetcher {
-	return &Fetcher{apiKey: apiKey, client: &http.Client{}}
+	return &Fetcher{apiKey: apiKey, client: &http.Client{}, BaseURL: defaultBaseURL}
 }
 
 type SourceType int
@@ -91,6 +95,51 @@ func (f *Fetcher) FetchAll(ctx context.Context, src *Source, onBatch func([]Vide
 	return f.fetchPlaylist(ctx, playlistID, 0, onBatch)
 }
 
+// FetchVideosInfo looks up titles for the given YouTube video IDs and
+// reports which ones actually exist (are public/not deleted). IDs that
+// YouTube doesn't return — private, deleted, or invalid — are simply
+// absent from the result map.
+func (f *Fetcher) FetchVideosInfo(ctx context.Context, ids []string) (map[string]string, error) {
+	titles := make(map[string]string, len(ids))
+
+	const chunkSize = 50
+	for start := 0; start < len(ids); start += chunkSize {
+		end := start + chunkSize
+		if end > len(ids) {
+			end = len(ids)
+		}
+		chunk := ids[start:end]
+
+		params := url.Values{
+			"part":   {"snippet"},
+			"id":     {strings.Join(chunk, ",")},
+			"key":    {f.apiKey},
+			"fields": {"items(id,snippet/title)"},
+		}
+		resp, err := f.get(ctx, f.BaseURL+"/videos", params)
+		if err != nil {
+			return nil, err
+		}
+
+		var data struct {
+			Items []struct {
+				ID      string `json:"id"`
+				Snippet struct {
+					Title string `json:"title"`
+				} `json:"snippet"`
+			} `json:"items"`
+		}
+		if err := json.Unmarshal(resp, &data); err != nil {
+			return nil, fmt.Errorf("parse videos response: %w", err)
+		}
+		for _, item := range data.Items {
+			titles[item.ID] = item.Snippet.Title
+		}
+	}
+
+	return titles, nil
+}
+
 func (f *Fetcher) channelUploadsPlaylist(ctx context.Context, channelID string) (string, error) {
 	params := url.Values{
 		"part":   {"contentDetails"},
@@ -107,7 +156,7 @@ func (f *Fetcher) channelUploadsPlaylist(ctx context.Context, channelID string) 
 		params.Set("forUsername", channelID)
 	}
 
-	resp, err := f.get(ctx, "https://www.googleapis.com/youtube/v3/channels", params)
+	resp, err := f.get(ctx, f.BaseURL+"/channels", params)
 	if err != nil {
 		return "", err
 	}
@@ -147,7 +196,7 @@ func (f *Fetcher) fetchPlaylist(ctx context.Context, playlistID string, maxItems
 			params.Set("pageToken", pageToken)
 		}
 
-		resp, err := f.get(ctx, "https://www.googleapis.com/youtube/v3/playlistItems", params)
+		resp, err := f.get(ctx, f.BaseURL+"/playlistItems", params)
 		if err != nil {
 			return total, err
 		}

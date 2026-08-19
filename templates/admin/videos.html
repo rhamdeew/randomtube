@@ -8,6 +8,14 @@
     </div>
 </div>
 
+{{if .AddError}}
+<div class="notification is-danger">Не удалось проверить видео через YouTube API. Попробуйте ещё раз.</div>
+{{else if .Added}}
+<div class="notification is-info">
+    Добавлено: {{.Added}}{{if and .Skipped (ne .Skipped "0")}}, пропущено (не найдено на YouTube): {{.Skipped}}{{end}}
+</div>
+{{end}}
+
 {{/* Filter form */}}
 <form method="get" action="/admin/videos" class="box">
     <div class="columns is-vcentered">

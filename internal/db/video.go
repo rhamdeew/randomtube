@@ -236,15 +236,15 @@ func SetVideoCategories(db *sql.DB, videoID int64, categoryIDs []int64) error {
 
 // AddVideo inserts a video by YouTube ID and assigns categories.
 // If the video already exists, only new category associations are added.
-func AddVideo(db *sql.DB, youtubeID string, categoryIDs []int64) error {
+func AddVideo(db *sql.DB, youtubeID, name string, categoryIDs []int64) error {
 	tx, err := db.Begin()
 	if err != nil {
 		return err
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	if _, err = tx.Exec(`INSERT INTO videos (youtube_id, name) VALUES (?, '')
-	                     ON CONFLICT(youtube_id) DO NOTHING`, youtubeID); err != nil {
+	if _, err = tx.Exec(`INSERT INTO videos (youtube_id, name) VALUES (?, ?)
+	                     ON CONFLICT(youtube_id) DO NOTHING`, youtubeID, name); err != nil {
 		return err
 	}
 
