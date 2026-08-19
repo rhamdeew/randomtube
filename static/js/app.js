@@ -80,6 +80,25 @@
         vote('dislike');
     });
 
+    document.getElementById('btn-share').addEventListener('click', function () {
+        share();
+    });
+
+    function share() {
+        var url = window.location.origin + window.location.pathname + '?v=' + RT.currentID;
+        var btn = document.getElementById('btn-share');
+        var originalText = btn.textContent;
+
+        function showCopied() {
+            btn.textContent = 'Скопировано';
+            setTimeout(function () { btn.textContent = originalText; }, 1500);
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(showCopied).catch(function () {});
+        }
+    }
+
     function vote(button) {
         post('/vote', { id: RT.currentID, button: button }, function () {});
     }

@@ -120,6 +120,93 @@ func TestPublicIndex_EmptyDB(t *testing.T) {
 	}
 }
 
+func TestPublicIndex_SpecificVideo_ReturnsIt(t *testing.T) {
+	database := newTestDB(t)
+	seedVideo(t, database, "abc123", "Test Video", 1)
+	seedVideo(t, database, "other456", "Other Video", 1)
+
+	tmpl := newTestTemplates(t)
+	h := handlers.NewPublicHandler(database, tmpl)
+
+	req := httptest.NewRequest(http.MethodGet, "/?v=abc123", nil)
+	w := httptest.NewRecorder()
+	h.Index(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "abc123") {
+		t.Errorf("expected requested video in response, body: %s", body)
+	}
+	if strings.Contains(body, "other456") {
+		t.Errorf("did not expect other video in response, body: %s", body)
+	}
+}
+
+func TestPublicIndex_SpecificVideo_NotFound_RedirectsHome(t *testing.T) {
+	database := newTestDB(t)
+	seedVideo(t, database, "abc123", "Test Video", 1)
+
+	tmpl := newTestTemplates(t)
+	h := handlers.NewPublicHandler(database, tmpl)
+
+	req := httptest.NewRequest(http.MethodGet, "/?v=missing", nil)
+	w := httptest.NewRecorder()
+	h.Index(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusFound {
+		t.Fatalf("expected 302 redirect, got %d", resp.StatusCode)
+	}
+	if loc := resp.Header.Get("Location"); loc != "/" {
+		t.Errorf("expected redirect to /, got %q", loc)
+	}
+}
+
+func TestPublicIndex_SpecificVideo_Disabled_RedirectsHome(t *testing.T) {
+	database := newTestDB(t)
+	seedVideo(t, database, "dead1", "Dead Video", 0)
+
+	tmpl := newTestTemplates(t)
+	h := handlers.NewPublicHandler(database, tmpl)
+
+	req := httptest.NewRequest(http.MethodGet, "/?v=dead1", nil)
+	w := httptest.NewRecorder()
+	h.Index(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusFound {
+		t.Fatalf("expected 302 redirect, got %d", resp.StatusCode)
+	}
+	if loc := resp.Header.Get("Location"); loc != "/" {
+		t.Errorf("expected redirect to /, got %q", loc)
+	}
+}
+
+func TestPublicIndex_SpecificVideo_NotFound_RedirectsToCategory(t *testing.T) {
+	database := newTestDB(t)
+	seedCategory(t, database, 1, "Music", "music")
+	seedVideo(t, database, "abc123", "Test Video", 1)
+
+	tmpl := newTestTemplates(t)
+	h := handlers.NewPublicHandler(database, tmpl)
+
+	req := httptest.NewRequest(http.MethodGet, "/c/music?v=missing", nil)
+	req.SetPathValue("code", "music")
+	w := httptest.NewRecorder()
+	h.Index(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusFound {
+		t.Fatalf("expected 302 redirect, got %d", resp.StatusCode)
+	}
+	if loc := resp.Header.Get("Location"); loc != "/c/music" {
+		t.Errorf("expected redirect to /c/music, got %q", loc)
+	}
+}
+
 func TestPublicNext_ReturnsJSON(t *testing.T) {
 	database := newTestDB(t)
 	seedVideo(t, database, "vid1", "Video 1", 1)

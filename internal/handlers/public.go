@@ -19,6 +19,12 @@ func NewPublicHandler(database *sql.DB, tmpl *Templates) *PublicHandler {
 
 func (h *PublicHandler) Index(w http.ResponseWriter, r *http.Request) {
 	catCode := r.PathValue("code")
+
+	if youtubeID := r.URL.Query().Get("v"); youtubeID != "" {
+		h.serveSpecificVideo(w, r, catCode, youtubeID)
+		return
+	}
+
 	h.serveRandomVideo(w, r, catCode)
 }
 
@@ -29,6 +35,24 @@ func (h *PublicHandler) serveRandomVideo(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
+	h.renderVideo(w, r, catCode, video)
+}
+
+func (h *PublicHandler) serveSpecificVideo(w http.ResponseWriter, r *http.Request, catCode string, youtubeID string) {
+	video, err := db.GetVideoByYoutubeID(h.db, youtubeID)
+	if err != nil || video == nil || !video.Enabled {
+		basePath := "/"
+		if catCode != "" {
+			basePath = "/c/" + catCode
+		}
+		http.Redirect(w, r, basePath, http.StatusFound)
+		return
+	}
+
+	h.renderVideo(w, r, catCode, video)
+}
+
+func (h *PublicHandler) renderVideo(w http.ResponseWriter, r *http.Request, catCode string, video *db.Video) {
 	_ = db.IncrementViews(h.db, video.ID)
 
 	cats, _ := db.ListCategories(h.db)
