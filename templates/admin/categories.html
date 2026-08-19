@@ -1,32 +1,32 @@
 {{define "content"}}
-<h1 class="title">Категории</h1>
+<h1 class="title">{{t .Lang "admin.nav.categories"}}</h1>
 
 <div class="columns">
     <div class="column is-5">
         <div class="box">
-            <h2 class="subtitle">Добавить категорию</h2>
+            <h2 class="subtitle">{{t $.Lang "admin.categories.add_heading"}}</h2>
             <form method="post" action="/admin/categories">
                 <div class="field">
-                    <label class="label is-small">Название</label>
+                    <label class="label is-small">{{t $.Lang "admin.common.name"}}</label>
                     <div class="control">
-                        <input class="input is-small" type="text" name="name" placeholder="Музыка" required>
+                        <input class="input is-small" type="text" name="name" placeholder="{{t $.Lang "admin.categories.name_placeholder"}}" required>
                     </div>
                 </div>
                 <div class="field">
-                    <label class="label is-small">Код (slug)</label>
+                    <label class="label is-small">{{t $.Lang "admin.categories.code_label"}}</label>
                     <div class="control">
                         <input class="input is-small" type="text" name="code" placeholder="music" required>
                     </div>
                 </div>
                 <div class="field">
-                    <button class="button is-primary is-small" type="submit">Добавить</button>
+                    <button class="button is-primary is-small" type="submit">{{t $.Lang "admin.common.add"}}</button>
                 </div>
             </form>
         </div>
     </div>
     <div class="column is-7">
         <table class="table is-fullwidth is-striped">
-            <thead><tr><th>ID</th><th>Название</th><th>Код</th><th>Действия</th></tr></thead>
+            <thead><tr><th>ID</th><th>{{t $.Lang "admin.common.name"}}</th><th>{{t $.Lang "admin.common.code"}}</th><th>{{t $.Lang "admin.common.actions"}}</th></tr></thead>
             <tbody>
             {{range .Categories}}
             <tr>
@@ -42,7 +42,7 @@
                 <td>
                     <form method="post" action="/admin/categories/{{.ID}}/delete">
                         <button class="button is-small is-danger" type="submit"
-                            onclick="return confirm('Удалить категорию {{.Name}}?')">Удалить</button>
+                            onclick="return confirm('{{t $.Lang "admin.categories.confirm_delete"}} {{.Name}}?')">{{t $.Lang "admin.common.delete"}}</button>
                     </form>
                 </td>
             </tr>

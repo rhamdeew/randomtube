@@ -1,28 +1,28 @@
 {{define "content"}}
-<h1 class="title">Панель управления</h1>
+<h1 class="title">{{t .Lang "admin.dashboard.title"}}</h1>
 
 <div class="columns">
     <div class="column is-3">
         <div class="box has-text-centered">
-            <p class="heading">Всего видео</p>
+            <p class="heading">{{t $.Lang "admin.dashboard.total"}}</p>
             <p class="title">{{.Total}}</p>
         </div>
     </div>
     <div class="column is-3">
         <div class="box has-text-centered">
-            <p class="heading">Активных</p>
+            <p class="heading">{{t $.Lang "admin.dashboard.enabled"}}</p>
             <p class="title has-text-success">{{.Enabled}}</p>
         </div>
     </div>
     <div class="column is-3">
         <div class="box has-text-centered">
-            <p class="heading">Отключённых</p>
+            <p class="heading">{{t $.Lang "admin.dashboard.disabled"}}</p>
             <p class="title has-text-danger">{{.Disabled}}</p>
         </div>
     </div>
     <div class="column is-3">
         <div class="box has-text-centered">
-            <p class="heading">Категорий</p>
+            <p class="heading">{{t $.Lang "admin.dashboard.categories_count"}}</p>
             <p class="title">{{len .Categories}}</p>
         </div>
     </div>
@@ -30,10 +30,10 @@
 
 <div class="columns">
     <div class="column">
-        <h2 class="subtitle">Последние задачи импорта</h2>
+        <h2 class="subtitle">{{t $.Lang "admin.dashboard.recent_jobs"}}</h2>
         {{if .Jobs}}
         <table class="table is-fullwidth is-striped">
-            <thead><tr><th>#</th><th>URL</th><th>Статус</th><th>Прогресс</th><th>Ошибка</th><th>Дата</th></tr></thead>
+            <thead><tr><th>#</th><th>URL</th><th>{{t $.Lang "admin.common.status"}}</th><th>{{t $.Lang "admin.dashboard.progress"}}</th><th>{{t $.Lang "admin.common.error"}}</th><th>{{t $.Lang "admin.common.date"}}</th></tr></thead>
             <tbody>
             {{range .Jobs}}
             <tr>
@@ -53,7 +53,7 @@
             </tbody>
         </table>
         {{else}}
-        <p>Задач нет. <a href="/admin/import">Импортировать канал или плейлист</a></p>
+        <p>{{t $.Lang "admin.dashboard.no_jobs"}} <a href="/admin/import">{{t $.Lang "admin.dashboard.import_link"}}</a></p>
         {{end}}
     </div>
 </div>

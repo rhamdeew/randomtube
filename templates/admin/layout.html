@@ -1,5 +1,5 @@
 {{define "layout"}}<!DOCTYPE html>
-<html lang="ru">
+<html lang="{{.Lang}}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,18 +14,18 @@
     </div>
     <div class="navbar-menu">
         <div class="navbar-start">
-            <a class="navbar-item" href="/admin/">Главная</a>
-            <a class="navbar-item" href="/admin/videos">Видео</a>
-            <a class="navbar-item" href="/admin/categories">Категории</a>
-            <a class="navbar-item" href="/admin/import">Импорт</a>
+            <a class="navbar-item" href="/admin/">{{t .Lang "admin.nav.home"}}</a>
+            <a class="navbar-item" href="/admin/videos">{{t .Lang "admin.nav.videos"}}</a>
+            <a class="navbar-item" href="/admin/categories">{{t .Lang "admin.nav.categories"}}</a>
+            <a class="navbar-item" href="/admin/import">{{t .Lang "admin.nav.import"}}</a>
         </div>
         <div class="navbar-end">
             <div class="navbar-item">
-                <a href="/" target="_blank" class="button is-small is-light">Сайт ↗</a>
+                <a href="/" target="_blank" class="button is-small is-light">{{t .Lang "admin.nav.site"}}</a>
             </div>
             <div class="navbar-item">
                 <form action="/admin/logout" method="post">
-                    <button class="button is-small is-danger">Выйти</button>
+                    <button class="button is-small is-danger">{{t .Lang "admin.nav.logout"}}</button>
                 </form>
             </div>
         </div>

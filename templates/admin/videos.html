@@ -1,18 +1,18 @@
 {{define "content"}}
 <div class="level">
     <div class="level-left">
-        <h1 class="title">Видео</h1>
+        <h1 class="title">{{t .Lang "admin.videos.title"}}</h1>
     </div>
     <div class="level-right">
-        <a href="/admin/import" class="button is-primary">+ Импортировать</a>
+        <a href="/admin/import" class="button is-primary">{{t .Lang "admin.videos.import_button"}}</a>
     </div>
 </div>
 
 {{if .AddError}}
-<div class="notification is-danger">Не удалось проверить видео через YouTube API. Попробуйте ещё раз.</div>
+<div class="notification is-danger">{{t $.Lang "admin.videos.add_error"}}</div>
 {{else if .Added}}
 <div class="notification is-info">
-    Добавлено: {{.Added}}{{if and .Skipped (ne .Skipped "0")}}, пропущено (не найдено на YouTube): {{.Skipped}}{{end}}
+    {{t $.Lang "admin.videos.added"}}: {{.Added}}{{if and .Skipped (ne .Skipped "0")}}, {{t $.Lang "admin.videos.skipped"}}: {{.Skipped}}{{end}}
 </div>
 {{end}}
 
@@ -21,20 +21,20 @@
     <div class="columns is-vcentered">
         <div class="column is-3">
             <div class="field">
-                <label class="label is-small">Поиск</label>
+                <label class="label is-small">{{t $.Lang "admin.videos.search"}}</label>
                 <div class="control">
                     <input class="input is-small" type="text" name="search" value="{{.Search}}"
-                        placeholder="YouTube ID или название">
+                        placeholder="{{t $.Lang "admin.videos.search_placeholder"}}">
                 </div>
             </div>
         </div>
         <div class="column is-2">
             <div class="field">
-                <label class="label is-small">Категория</label>
+                <label class="label is-small">{{t $.Lang "admin.common.category"}}</label>
                 <div class="control">
                     <div class="select is-small is-fullwidth">
                         <select name="cat">
-                            <option value="">Все категории</option>
+                            <option value="">{{t $.Lang "admin.videos.all_categories"}}</option>
                             {{range .Categories}}
                             <option value="{{.Code}}" {{if eq $.CatCode .Code}}selected{{end}}>{{.Name}}</option>
                             {{end}}
@@ -45,13 +45,13 @@
         </div>
         <div class="column is-2">
             <div class="field">
-                <label class="label is-small">Статус</label>
+                <label class="label is-small">{{t $.Lang "admin.common.status"}}</label>
                 <div class="control">
                     <div class="select is-small is-fullwidth">
                         <select name="enabled">
-                            <option value="">Все</option>
-                            <option value="1" {{if eq $.EnabledFilter "1"}}selected{{end}}>Активные</option>
-                            <option value="0" {{if eq $.EnabledFilter "0"}}selected{{end}}>Отключённые</option>
+                            <option value="">{{t $.Lang "admin.common.all"}}</option>
+                            <option value="1" {{if eq $.EnabledFilter "1"}}selected{{end}}>{{t $.Lang "admin.dashboard.enabled"}}</option>
+                            <option value="0" {{if eq $.EnabledFilter "0"}}selected{{end}}>{{t $.Lang "admin.dashboard.disabled"}}</option>
                         </select>
                     </div>
                 </div>
@@ -63,7 +63,7 @@
             <div class="field">
                 <label class="label is-small">&nbsp;</label>
                 <div class="control">
-                    <button class="button is-small is-info is-fullwidth" type="submit">Фильтр</button>
+                    <button class="button is-small is-info is-fullwidth" type="submit">{{t $.Lang "admin.videos.filter_button"}}</button>
                 </div>
             </div>
         </div>
@@ -72,11 +72,11 @@
 
 {{/* Add video form */}}
 <details class="box">
-    <summary class="has-text-weight-semibold" style="cursor:pointer">+ Добавить видео вручную</summary>
+    <summary class="has-text-weight-semibold" style="cursor:pointer">{{t .Lang "admin.videos.add_manual"}}</summary>
     <div class="mt-3">
         <form method="post" action="/admin/videos/add">
             <div class="field">
-                <label class="label is-small">Ссылки на YouTube (по одной на строку)</label>
+                <label class="label is-small">{{t $.Lang "admin.videos.urls_label"}}</label>
                 <div class="control">
                     <textarea class="textarea is-small" name="urls" rows="5"
                         placeholder="https://youtu.be/dQw4w9WgXcQ&#10;dQw4w9WgXcQ&#10;https://www.youtube.com/watch?v=..."></textarea>
@@ -84,7 +84,7 @@
             </div>
             {{if .Categories}}
             <div class="field">
-                <label class="label is-small">Категории <span class="has-text-grey">(необязательно)</span></label>
+                <label class="label is-small">{{t $.Lang "admin.videos.categories_label"}} <span class="has-text-grey">({{t $.Lang "admin.common.optional"}})</span></label>
                 <div class="control">
                     {{range .Categories}}
                     <label class="checkbox mr-4">
@@ -97,7 +97,7 @@
             {{end}}
             <div class="field">
                 <div class="control">
-                    <button class="button is-success is-small" type="submit">Добавить</button>
+                    <button class="button is-success is-small" type="submit">{{t $.Lang "admin.common.add"}}</button>
                 </div>
             </div>
         </form>
@@ -108,13 +108,13 @@
 <form id="bulk-form" method="post" action="/admin/videos/action">
 <div class="level">
     <div class="level-left">
-        <p class="is-size-7">Всего: {{.Total}}</p>
+        <p class="is-size-7">{{t .Lang "admin.common.total"}}: {{.Total}}</p>
     </div>
     <div class="level-right">
         <div class="buttons">
-            <button type="button" class="button is-small is-success" onclick="bulkAction('enable')">Включить</button>
-            <button type="button" class="button is-small is-warning" onclick="bulkAction('disable')">Отключить</button>
-            <button type="button" class="button is-small is-danger" onclick="bulkAction('delete')">Удалить</button>
+            <button type="button" class="button is-small is-success" onclick="bulkAction('enable')">{{t .Lang "admin.common.enable"}}</button>
+            <button type="button" class="button is-small is-warning" onclick="bulkAction('disable')">{{t .Lang "admin.common.disable"}}</button>
+            <button type="button" class="button is-small is-danger" onclick="bulkAction('delete')">{{t .Lang "admin.common.delete"}}</button>
         </div>
     </div>
 </div>
@@ -139,22 +139,22 @@
             <th>YouTube ID</th>
             <th>
                 <a href="?cat={{$.CatCode}}&enabled={{$.EnabledFilter}}&search={{$.Search}}&sort=name&dir={{$sortName}}&page=1">
-                    Название{{if eq $.SortBy "name"}} {{if eq $.SortDir "desc"}}↓{{else}}↑{{end}}{{end}}
+                    {{t $.Lang "admin.common.name"}}{{if eq $.SortBy "name"}} {{if eq $.SortDir "desc"}}↓{{else}}↑{{end}}{{end}}
                 </a>
             </th>
-            <th>Категории</th>
-            <th>Статус</th>
+            <th>{{t $.Lang "admin.common.categories"}}</th>
+            <th>{{t $.Lang "admin.common.status"}}</th>
             <th>
                 <a href="?cat={{$.CatCode}}&enabled={{$.EnabledFilter}}&search={{$.Search}}&sort=views&dir={{$sortViews}}&page=1">
-                    Просмотры{{if eq $.SortBy "views"}} {{if eq $.SortDir "desc"}}↓{{else}}↑{{end}}{{end}}
+                    {{t $.Lang "admin.videos.views"}}{{if eq $.SortBy "views"}} {{if eq $.SortDir "desc"}}↓{{else}}↑{{end}}{{end}}
                 </a>
             </th>
             <th>
                 <a href="?cat={{$.CatCode}}&enabled={{$.EnabledFilter}}&search={{$.Search}}&sort=rating&dir={{$sortRating}}&page=1">
-                    Рейтинг{{if eq $.SortBy "rating"}} {{if eq $.SortDir "desc"}}↓{{else}}↑{{end}}{{end}}
+                    {{t $.Lang "admin.videos.rating"}}{{if eq $.SortBy "rating"}} {{if eq $.SortDir "desc"}}↓{{else}}↑{{end}}{{end}}
                 </a>
             </th>
-            <th>Действия</th>
+            <th>{{t $.Lang "admin.common.actions"}}</th>
         </tr>
     </thead>
     <tbody>
@@ -172,21 +172,21 @@
         </td>
         <td>
             {{if .Enabled}}
-            <span class="tag is-success is-small">вкл</span>
+            <span class="tag is-success is-small">{{t $.Lang "admin.common.on"}}</span>
             {{else}}
-            <span class="tag is-danger is-small">откл</span>
+            <span class="tag is-danger is-small">{{t $.Lang "admin.common.off"}}</span>
             {{end}}
         </td>
         <td>{{.Views}}</td>
         <td>{{.Rating}}</td>
         <td>
-            <a href="/admin/videos/{{.ID}}/edit" class="button is-info is-small">Ред.</a>
+            <a href="/admin/videos/{{.ID}}/edit" class="button is-info is-small">{{t $.Lang "admin.common.edit"}}</a>
             {{if .Enabled}}
-            <button type="button" class="button is-warning is-small" onclick="singleAction('disable', {{.ID}})">Откл</button>
+            <button type="button" class="button is-warning is-small" onclick="singleAction('disable', {{.ID}})">{{t $.Lang "admin.common.disable"}}</button>
             {{else}}
-            <button type="button" class="button is-success is-small" onclick="singleAction('enable', {{.ID}})">Вкл</button>
+            <button type="button" class="button is-success is-small" onclick="singleAction('enable', {{.ID}})">{{t $.Lang "admin.common.enable"}}</button>
             {{end}}
-            <button type="button" class="button is-danger is-small" onclick="singleAction('delete', {{.ID}})">Удалить</button>
+            <button type="button" class="button is-danger is-small" onclick="singleAction('delete', {{.ID}})">{{t $.Lang "admin.common.delete"}}</button>
         </td>
     </tr>
     {{end}}

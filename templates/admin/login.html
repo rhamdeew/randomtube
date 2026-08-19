@@ -1,9 +1,9 @@
 {{define "layout"}}<!DOCTYPE html>
-<html lang="ru">
+<html lang="{{.Lang}}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Вход — RandomTube Admin</title>
+    <title>{{t .Lang "admin.login.title"}}</title>
     <link rel="stylesheet" href="/static/css/bulma.min.css">
 </head>
 <body>
@@ -11,25 +11,25 @@
     <div class="container">
         <div class="columns is-centered">
             <div class="column is-4">
-                <h1 class="title has-text-centered">Вход в админку</h1>
+                <h1 class="title has-text-centered">{{t .Lang "admin.login.heading"}}</h1>
                 {{if .Error}}
                 <div class="notification is-danger">{{.Error}}</div>
                 {{end}}
                 <form method="post" action="/admin/login">
                     <div class="field">
-                        <label class="label">Логин</label>
+                        <label class="label">{{t .Lang "admin.login.username"}}</label>
                         <div class="control">
                             <input class="input" type="text" name="username" autofocus required>
                         </div>
                     </div>
                     <div class="field">
-                        <label class="label">Пароль</label>
+                        <label class="label">{{t .Lang "admin.login.password"}}</label>
                         <div class="control">
                             <input class="input" type="password" name="password" required>
                         </div>
                     </div>
                     <div class="field">
-                        <button class="button is-primary is-fullwidth" type="submit">Войти</button>
+                        <button class="button is-primary is-fullwidth" type="submit">{{t .Lang "admin.login.submit"}}</button>
                     </div>
                 </form>
             </div>

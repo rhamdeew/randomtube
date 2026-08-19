@@ -1,10 +1,10 @@
 {{define "content"}}
 <div class="level">
     <div class="level-left">
-        <h1 class="title">Редактировать видео #{{.Video.ID}}</h1>
+        <h1 class="title">{{t .Lang "admin.video_edit.title"}} #{{.Video.ID}}</h1>
     </div>
     <div class="level-right">
-        <a href="/admin/videos" class="button is-light">← Назад</a>
+        <a href="/admin/videos" class="button is-light">{{t .Lang "admin.common.back"}}</a>
     </div>
 </div>
 
@@ -15,20 +15,20 @@
 <div class="box">
     <form method="post" action="/admin/videos/{{.Video.ID}}/edit">
         <div class="field">
-            <label class="label">YouTube ID или ссылка</label>
+            <label class="label">{{t $.Lang "admin.video_edit.youtube_label"}}</label>
             <div class="control">
                 <input class="input" type="text" name="youtube_id" value="{{.Video.YoutubeID}}" required
-                    placeholder="dQw4w9WgXcQ или https://youtu.be/...">
+                    placeholder="{{t $.Lang "admin.video_edit.youtube_placeholder"}}">
             </div>
         </div>
         <div class="field">
-            <label class="label">Название</label>
+            <label class="label">{{t $.Lang "admin.common.name"}}</label>
             <div class="control">
-                <input class="input" type="text" name="name" value="{{.Video.Name}}" placeholder="Оставьте пустым, если неизвестно">
+                <input class="input" type="text" name="name" value="{{.Video.Name}}" placeholder="{{t $.Lang "admin.video_edit.name_placeholder"}}">
             </div>
         </div>
         <div class="field">
-            <label class="label">Категории <span class="has-text-grey is-size-7">(можно не выбирать)</span></label>
+            <label class="label">{{t $.Lang "admin.common.categories"}} <span class="has-text-grey is-size-7">{{t $.Lang "admin.video_edit.categories_hint"}}</span></label>
             <div class="control">
                 {{if .AllCategories}}
                 {{range .AllCategories}}
@@ -39,16 +39,16 @@
                 </label>
                 {{end}}
                 {{else}}
-                <span class="has-text-grey">Нет категорий</span>
+                <span class="has-text-grey">{{t $.Lang "admin.video_edit.no_categories"}}</span>
                 {{end}}
             </div>
         </div>
         <div class="field is-grouped mt-4">
             <div class="control">
-                <button class="button is-primary" type="submit">Сохранить</button>
+                <button class="button is-primary" type="submit">{{t $.Lang "admin.common.save"}}</button>
             </div>
             <div class="control">
-                <a href="/admin/videos" class="button is-light">Отмена</a>
+                <a href="/admin/videos" class="button is-light">{{t $.Lang "admin.common.cancel"}}</a>
             </div>
         </div>
     </form>

@@ -15,6 +15,7 @@ import (
 
 	dbpkg "randomtube/internal/db"
 	"randomtube/internal/handlers"
+	"randomtube/internal/i18n"
 	"randomtube/internal/middleware"
 	"randomtube/internal/youtube"
 )
@@ -77,6 +78,7 @@ func main() {
 			}
 			return out
 		},
+		"t": i18n.T,
 	}
 
 	tmpl, err := handlers.NewTemplates(tmplFS, funcMap)

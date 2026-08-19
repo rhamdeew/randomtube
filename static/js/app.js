@@ -5,6 +5,7 @@
 
     var iframe = document.getElementById('ytplayer');
     var NOCOOKIE = 'https://www.youtube-nocookie.com';
+    var COPIED_TEXT = document.documentElement.lang === 'ru' ? 'Скопировано' : 'Copied';
 
     // Inject origin into iframe src so YouTube knows where to send postMessage events
     iframe.src = NOCOOKIE + '/embed/' + RT.currentID +
@@ -90,7 +91,7 @@
         var originalText = btn.textContent;
 
         function showCopied() {
-            btn.textContent = 'Скопировано';
+            btn.textContent = COPIED_TEXT;
             setTimeout(function () { btn.textContent = originalText; }, 1500);
         }
 

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"randomtube/internal/db"
+	"randomtube/internal/i18n"
 )
 
 type PublicHandler struct {
@@ -31,7 +32,7 @@ func (h *PublicHandler) Index(w http.ResponseWriter, r *http.Request) {
 func (h *PublicHandler) serveRandomVideo(w http.ResponseWriter, r *http.Request, catCode string) {
 	video, err := db.RandomVideo(h.db, catCode, "")
 	if err != nil || video == nil {
-		h.templates.Error(w, r, http.StatusNotFound, "Видео не найдено")
+		h.templates.Error(w, r, http.StatusNotFound, "error.video_not_found")
 		return
 	}
 
@@ -56,7 +57,7 @@ func (h *PublicHandler) renderVideo(w http.ResponseWriter, r *http.Request, catC
 	_ = db.IncrementViews(h.db, video.ID)
 
 	cats, _ := db.ListCategories(h.db)
-	h.templates.Render(w, "public/index.html", map[string]any{
+	h.templates.Render(w, r, "public/index.html", map[string]any{
 		"Video":        video,
 		"CategoryCode": catCode,
 		"Categories":   cats,
@@ -66,10 +67,10 @@ func (h *PublicHandler) renderVideo(w http.ResponseWriter, r *http.Request, catC
 func (h *PublicHandler) Categories(w http.ResponseWriter, r *http.Request) {
 	cats, err := db.ListCategories(h.db)
 	if err != nil {
-		h.templates.Error(w, r, http.StatusInternalServerError, "Ошибка сервера")
+		h.templates.Error(w, r, http.StatusInternalServerError, "error.server_error")
 		return
 	}
-	h.templates.Render(w, "public/categories.html", map[string]any{
+	h.templates.Render(w, r, "public/categories.html", map[string]any{
 		"Categories": cats,
 	})
 }
@@ -85,7 +86,7 @@ func (h *PublicHandler) Next(w http.ResponseWriter, r *http.Request) {
 
 	video, err := db.RandomVideo(h.db, catCode, currentID)
 	if err != nil || video == nil {
-		jsonError(w, "Нет больше видео", http.StatusNotFound)
+		jsonError(w, i18n.T(i18n.Detect(r), "error.no_more_videos"), http.StatusNotFound)
 		return
 	}
 
@@ -110,8 +111,10 @@ func (h *PublicHandler) Report(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	lang := i18n.Detect(r)
+
 	if err := db.DisableVideo(h.db, youtubeID); err != nil {
-		jsonError(w, "Ошибка сервера", http.StatusInternalServerError)
+		jsonError(w, i18n.T(lang, "error.server_error"), http.StatusInternalServerError)
 		return
 	}
 
@@ -119,7 +122,7 @@ func (h *PublicHandler) Report(w http.ResponseWriter, r *http.Request) {
 	catCode := r.FormValue("cat")
 	video, err := db.RandomVideo(h.db, catCode, youtubeID)
 	if err != nil || video == nil {
-		jsonError(w, "Нет больше видео", http.StatusNotFound)
+		jsonError(w, i18n.T(lang, "error.no_more_videos"), http.StatusNotFound)
 		return
 	}
 
@@ -140,20 +143,22 @@ func (h *PublicHandler) Vote(w http.ResponseWriter, r *http.Request) {
 	youtubeID := r.FormValue("id")
 	button := r.FormValue("button") // "like" | "dislike"
 
+	lang := i18n.Detect(r)
+
 	video, err := db.GetVideoByYoutubeID(h.db, youtubeID)
 	if err != nil || video == nil {
-		jsonError(w, "Видео не найдено", http.StatusNotFound)
+		jsonError(w, i18n.T(lang, "error.video_not_found"), http.StatusNotFound)
 		return
 	}
 
 	ip := realIP(r)
 	ok, err := db.CanVote(h.db, video.ID, ip)
 	if err != nil {
-		jsonError(w, "Ошибка сервера", http.StatusInternalServerError)
+		jsonError(w, i18n.T(lang, "error.server_error"), http.StatusInternalServerError)
 		return
 	}
 	if !ok {
-		jsonOK(w, "Голосовать можно раз в сутки")
+		jsonOK(w, i18n.T(lang, "error.vote_once_per_day"))
 		return
 	}
 
@@ -166,10 +171,10 @@ func (h *PublicHandler) Vote(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := db.AddVote(h.db, video.ID, ip, r.UserAgent(), vote); err != nil {
-		jsonError(w, "Ошибка сохранения", http.StatusInternalServerError)
+		jsonError(w, i18n.T(lang, "error.save_error"), http.StatusInternalServerError)
 		return
 	}
-	jsonOK(w, "Ваш голос учтён")
+	jsonOK(w, i18n.T(lang, "vote.recorded"))
 }
 
 func realIP(r *http.Request) string {

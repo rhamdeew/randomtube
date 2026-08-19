@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"randomtube/internal/db"
+	"randomtube/internal/i18n"
 	"randomtube/internal/middleware"
 	"randomtube/internal/youtube"
 
@@ -38,18 +39,18 @@ func (h *AdminHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 		ok, err := db.CheckAdminPassword(h.db, username, password)
 		if err != nil || !ok {
-			h.tmpl.Render(w, "admin/login.html", map[string]any{"Error": "Неверный логин или пароль"})
+			h.tmpl.Render(w, r, "admin/login.html", map[string]any{"Error": i18n.T(i18n.Detect(r), "error.invalid_credentials")})
 			return
 		}
 
 		if err := middleware.SetAuthenticated(h.store, w, r); err != nil {
-			h.tmpl.Render(w, "admin/login.html", map[string]any{"Error": "Не удалось создать сессию"})
+			h.tmpl.Render(w, r, "admin/login.html", map[string]any{"Error": i18n.T(i18n.Detect(r), "error.session_error")})
 			return
 		}
 		http.Redirect(w, r, "/admin/", http.StatusSeeOther)
 		return
 	}
-	h.tmpl.Render(w, "admin/login.html", nil)
+	h.tmpl.Render(w, r, "admin/login.html", nil)
 }
 
 func (h *AdminHandler) Logout(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +68,7 @@ func (h *AdminHandler) Dashboard(w http.ResponseWriter, r *http.Request) {
 	cats, _ := db.ListCategories(h.db)
 	jobs, _ := db.ListImportJobs(h.db)
 
-	h.tmpl.Render(w, "admin/dashboard.html", map[string]any{
+	h.tmpl.Render(w, r, "admin/dashboard.html", map[string]any{
 		"Total":      total,
 		"Enabled":    enabled,
 		"Disabled":   disabled,
@@ -110,7 +111,7 @@ func (h *AdminHandler) Videos(w http.ResponseWriter, r *http.Request) {
 	cats, _ := db.ListCategories(h.db)
 	pages := (total + 49) / 50
 
-	h.tmpl.Render(w, "admin/videos.html", map[string]any{
+	h.tmpl.Render(w, r, "admin/videos.html", map[string]any{
 		"Videos":        videos,
 		"Total":         total,
 		"Page":          page,
@@ -141,7 +142,7 @@ func (h *AdminHandler) VideoAction(w http.ResponseWriter, r *http.Request) {
 	ids := parseIDs(r.Form["ids"])
 
 	if len(ids) == 0 {
-		jsonError(w, "нет выбранных видео", http.StatusBadRequest)
+		jsonError(w, i18n.T(i18n.Detect(r), "error.no_videos_selected"), http.StatusBadRequest)
 		return
 	}
 
@@ -267,15 +268,16 @@ func (h *AdminHandler) VideoEdit(w http.ResponseWriter, r *http.Request) {
 		selectedCats[c.ID] = true
 	}
 
+	lang := i18n.Detect(r)
 	var errMsg string
 	switch r.URL.Query().Get("error") {
 	case "invalid_id":
-		errMsg = "Неверный YouTube ID или ссылка"
+		errMsg = i18n.T(lang, "error.invalid_youtube_id")
 	case "db":
-		errMsg = "Ошибка базы данных"
+		errMsg = i18n.T(lang, "error.db_error")
 	}
 
-	h.tmpl.Render(w, "admin/video_edit.html", map[string]any{
+	h.tmpl.Render(w, r, "admin/video_edit.html", map[string]any{
 		"Video":         video,
 		"AllCategories": cats,
 		"SelectedCats":  selectedCats,
@@ -287,7 +289,7 @@ func (h *AdminHandler) VideoEdit(w http.ResponseWriter, r *http.Request) {
 
 func (h *AdminHandler) Categories(w http.ResponseWriter, r *http.Request) {
 	cats, _ := db.ListCategories(h.db)
-	h.tmpl.Render(w, "admin/categories.html", map[string]any{"Categories": cats})
+	h.tmpl.Render(w, r, "admin/categories.html", map[string]any{"Categories": cats})
 }
 
 func (h *AdminHandler) CategoryCreate(w http.ResponseWriter, r *http.Request) {
@@ -341,7 +343,7 @@ func (h *AdminHandler) CategoryDelete(w http.ResponseWriter, r *http.Request) {
 func (h *AdminHandler) ImportForm(w http.ResponseWriter, r *http.Request) {
 	cats, _ := db.ListCategories(h.db)
 	jobs, _ := db.ListImportJobs(h.db)
-	h.tmpl.Render(w, "admin/import.html", map[string]any{
+	h.tmpl.Render(w, r, "admin/import.html", map[string]any{
 		"Categories": cats,
 		"Jobs":       jobs,
 	})

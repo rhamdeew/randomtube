@@ -4,6 +4,8 @@ import (
 	"html/template"
 	"io/fs"
 	"net/http"
+
+	"randomtube/internal/i18n"
 )
 
 type Templates struct {
@@ -47,19 +49,27 @@ func NewTemplates(fsys fs.FS, funcs template.FuncMap) (*Templates, error) {
 	return t, nil
 }
 
-func (t *Templates) Render(w http.ResponseWriter, name string, data any) {
+func (t *Templates) Render(w http.ResponseWriter, r *http.Request, name string, data any) {
 	tmpl, ok := t.tmpl[name]
 	if !ok {
 		http.Error(w, "template not found: "+name, http.StatusInternalServerError)
 		return
 	}
+
+	m, ok := data.(map[string]any)
+	if !ok {
+		m = map[string]any{}
+	}
+	m["Lang"] = i18n.Detect(r)
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := tmpl.ExecuteTemplate(w, "layout", data); err != nil {
+	if err := tmpl.ExecuteTemplate(w, "layout", m); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func (t *Templates) Error(w http.ResponseWriter, r *http.Request, code int, msg string) {
+func (t *Templates) Error(w http.ResponseWriter, r *http.Request, code int, msgKey string) {
 	w.WriteHeader(code)
-	t.Render(w, "public/error.html", map[string]any{"Message": msg, "Code": code})
+	lang := i18n.Detect(r)
+	t.Render(w, r, "public/error.html", map[string]any{"Message": i18n.T(lang, msgKey), "Code": code})
 }

@@ -1,26 +1,26 @@
 {{define "content"}}
-<h1 class="title">Импорт канала / плейлиста</h1>
+<h1 class="title">{{t .Lang "admin.import.title"}}</h1>
 
 <div class="columns">
     <div class="column is-5">
         <div class="box">
             <p class="is-size-7 mb-3">
-                Вставьте ссылку на YouTube-канал или плейлист.<br>
-                Примеры: <code>https://www.youtube.com/@channelname</code>, <code>https://www.youtube.com/playlist?list=PLxxx</code>
+                {{t .Lang "admin.import.description"}}<br>
+                {{t .Lang "admin.import.examples"}} <code>https://www.youtube.com/@channelname</code>, <code>https://www.youtube.com/playlist?list=PLxxx</code>
             </p>
             <form method="post" action="/admin/import">
                 <div class="field">
-                    <label class="label is-small">URL канала или плейлиста</label>
+                    <label class="label is-small">{{t $.Lang "admin.import.url_label"}}</label>
                     <div class="control">
                         <input class="input" type="text" name="url" placeholder="https://www.youtube.com/@..." required autofocus>
                     </div>
                 </div>
                 <div class="field">
-                    <label class="label is-small">Категория (необязательно)</label>
+                    <label class="label is-small">{{t $.Lang "admin.import.category_label"}}</label>
                     <div class="control">
                         <div class="select is-fullwidth">
                             <select name="category_id">
-                                <option value="">Без категории</option>
+                                <option value="">{{t $.Lang "admin.import.no_category"}}</option>
                                 {{range .Categories}}
                                 <option value="{{.ID}}">{{.Name}}</option>
                                 {{end}}
@@ -29,16 +29,16 @@
                     </div>
                 </div>
                 <div class="field">
-                    <button class="button is-primary" type="submit">Начать импорт</button>
+                    <button class="button is-primary" type="submit">{{t $.Lang "admin.import.submit"}}</button>
                 </div>
             </form>
         </div>
     </div>
     <div class="column is-7">
-        <h2 class="subtitle">История импортов</h2>
+        <h2 class="subtitle">{{t .Lang "admin.import.history"}}</h2>
         {{if .Jobs}}
         <table class="table is-fullwidth is-striped is-size-7">
-            <thead><tr><th>#</th><th>URL</th><th>Статус</th><th>Импортировано</th><th>Ошибка</th><th>Дата</th></tr></thead>
+            <thead><tr><th>#</th><th>URL</th><th>{{t $.Lang "admin.common.status"}}</th><th>{{t $.Lang "admin.import.imported"}}</th><th>{{t $.Lang "admin.common.error"}}</th><th>{{t $.Lang "admin.common.date"}}</th></tr></thead>
             <tbody>
             {{range .Jobs}}
             <tr>
@@ -58,7 +58,7 @@
             </tbody>
         </table>
         {{else}}
-        <p>Импортов ещё не было.</p>
+        <p>{{t $.Lang "admin.import.none"}}</p>
         {{end}}
     </div>
 </div>

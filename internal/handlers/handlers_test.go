@@ -14,6 +14,7 @@ import (
 
 	"randomtube/internal/db"
 	"randomtube/internal/handlers"
+	"randomtube/internal/i18n"
 	"randomtube/internal/middleware"
 	"randomtube/internal/youtube"
 )
@@ -27,6 +28,7 @@ func newTestTemplates(t *testing.T) *handlers.Templates {
 	tmpl, err := handlers.NewTemplates(fsys, template.FuncMap{
 		"truncate": func(s string, n int) string { return s },
 		"paginate": func(pages, current int) []int { return nil },
+		"t":        i18n.T,
 	})
 	if err != nil {
 		t.Fatalf("NewTemplates: %v", err)
@@ -383,7 +385,7 @@ func TestAdminLogin_WrongPassword(t *testing.T) {
 	h.Login(w, req)
 
 	body := w.Body.String()
-	if !strings.Contains(body, "Неверный") {
+	if !strings.Contains(body, "Invalid") {
 		t.Errorf("expected error message in body, got: %s", body)
 	}
 }
