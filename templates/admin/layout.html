@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>RandomTube Admin</title>
-    <link rel="stylesheet" href="/static/css/bulma.min.css">
-    <link rel="stylesheet" href="/static/css/admin.css">
+    <link rel="stylesheet" href="/static/css/bulma.min.css?v={{assetVersion}}">
+    <link rel="stylesheet" href="/static/css/admin.css?v={{assetVersion}}">
 </head>
 <body>
 <nav class="navbar is-dark" role="navigation">
@@ -36,7 +36,7 @@
         {{template "content" .}}
     </div>
 </section>
-<script src="/static/js/admin.js"></script>
+<script src="/static/js/admin.js?v={{assetVersion}}"></script>
 </body>
 </html>
 {{end}}

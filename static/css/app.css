@@ -53,3 +53,24 @@ body {
     .column.is-4 { padding: 0.25rem; }
     .button.is-large { font-size: 1rem; padding: 0.5em 1em; }
 }
+
+/* Landscape phones: a full-width 16:9 player is taller than the viewport
+   and pushes the controls off-screen, so cap the player to a share of the
+   viewport height (letting width follow) and shrink the chrome around it. */
+@media (max-height: 500px) and (orientation: landscape) {
+    .site-nav { padding: 0.4rem 0; }
+    .site-nav__logo { font-size: 1.1rem; }
+    .site-nav__link { font-size: 0.95rem; }
+    .column.is-10.is-12-mobile { padding: 0.25rem 0.75rem; }
+    #ytplayer {
+        width: auto;
+        height: 55vh;
+        height: 55dvh;
+        max-width: 100%;
+        margin: 0 auto;
+    }
+    #controls .column.is-4 { padding: 0.15rem; }
+    #controls .button.is-large { font-size: 0.85rem; padding: 0.35em 0.75em; }
+    #controls .column { padding: 0.15rem; }
+    .video-meta { margin-top: 0.15rem; }
+}

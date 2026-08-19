@@ -26,6 +26,9 @@ var templatesFS embed.FS
 //go:embed all:static
 var staticFS embed.FS
 
+// assetVersion busts browser caches for static assets on every deploy/restart.
+var assetVersion = time.Now().Unix()
+
 func main() {
 	var (
 		port      = flag.String("port", envOr("PORT", "8080"), "HTTP port")
@@ -79,6 +82,9 @@ func main() {
 			return out
 		},
 		"t": i18n.T,
+		"assetVersion": func() int64 {
+			return assetVersion
+		},
 	}
 
 	tmpl, err := handlers.NewTemplates(tmplFS, funcMap)
