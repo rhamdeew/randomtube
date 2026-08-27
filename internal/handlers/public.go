@@ -1,21 +1,33 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 
 	"randomtube/internal/db"
 	"randomtube/internal/i18n"
+	"randomtube/internal/youtube"
 )
 
 type PublicHandler struct {
 	db        *sql.DB
 	templates *Templates
+	fetcher   *youtube.Fetcher
+
+	addMu       sync.Mutex
+	addLastByIP map[string]time.Time
 }
 
-func NewPublicHandler(database *sql.DB, tmpl *Templates) *PublicHandler {
-	return &PublicHandler{db: database, templates: tmpl}
+const addRateLimit = 10 * time.Second
+
+func NewPublicHandler(database *sql.DB, tmpl *Templates, fetcher *youtube.Fetcher) *PublicHandler {
+	return &PublicHandler{db: database, templates: tmpl, fetcher: fetcher, addLastByIP: map[string]time.Time{}}
 }
 
 func (h *PublicHandler) Index(w http.ResponseWriter, r *http.Request) {
@@ -185,6 +197,137 @@ func realIP(r *http.Request) string {
 		return ip
 	}
 	return r.RemoteAddr
+}
+
+// --- Public add page (no admin login required) ---
+
+func (h *PublicHandler) AddForm(w http.ResponseWriter, r *http.Request) {
+	cats, _ := db.ListCategories(h.db)
+	jobs, _ := db.ListImportJobs(h.db)
+
+	lang := i18n.Detect(r)
+	var errMsg string
+	switch r.URL.Query().Get("error") {
+	case "invalid_url":
+		errMsg = i18n.T(lang, "public.add.error.invalid_url")
+	case "youtube":
+		errMsg = i18n.T(lang, "admin.videos.add_error")
+	case "no_api_key":
+		errMsg = i18n.T(lang, "public.add.error.no_api_key")
+	case "rate_limit":
+		errMsg = i18n.T(lang, "public.add.error.rate_limit")
+	case "db":
+		errMsg = i18n.T(lang, "error.db_error")
+	}
+
+	h.templates.Render(w, r, "public/add.html", map[string]any{
+		"Categories": cats,
+		"Jobs":       jobs,
+		"Error":      errMsg,
+		"Added":      r.URL.Query().Get("added") == "1",
+		"Job":        r.URL.Query().Get("job"),
+	})
+}
+
+func (h *PublicHandler) AddSubmit(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Redirect(w, r, "/add", http.StatusSeeOther)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Redirect(w, r, "/add", http.StatusSeeOther)
+		return
+	}
+
+	if !h.allowAdd(realIP(r)) {
+		http.Redirect(w, r, "/add?error=rate_limit", http.StatusSeeOther)
+		return
+	}
+
+	if h.fetcher == nil {
+		http.Redirect(w, r, "/add?error=no_api_key", http.StatusSeeOther)
+		return
+	}
+
+	input := strings.TrimSpace(r.FormValue("url"))
+
+	var catID *int64
+	if s := r.FormValue("category_id"); s != "" {
+		if id, err := strconv.ParseInt(s, 10, 64); err == nil && id > 0 {
+			catID = &id
+		}
+	}
+
+	if src, err := youtube.ParseURL(input); err == nil && src != nil {
+		jobID, err := db.CreateImportJob(h.db, input, catID)
+		if err != nil {
+			http.Redirect(w, r, "/add?error=db", http.StatusSeeOther)
+			return
+		}
+		go youtube.RunImport(context.Background(), h.db, h.fetcher, jobID, input, catID)
+		http.Redirect(w, r, "/add?job="+strconv.FormatInt(jobID, 10), http.StatusSeeOther)
+		return
+	}
+
+	ytID := extractYouTubeID(input)
+	if ytID == "" {
+		http.Redirect(w, r, "/add?error=invalid_url", http.StatusSeeOther)
+		return
+	}
+
+	info, err := h.fetcher.FetchVideosInfo(r.Context(), []string{ytID})
+	if err != nil {
+		http.Redirect(w, r, "/add?error=youtube", http.StatusSeeOther)
+		return
+	}
+	name, exists := info[ytID]
+	if !exists {
+		http.Redirect(w, r, "/add?error=youtube", http.StatusSeeOther)
+		return
+	}
+
+	var catIDs []int64
+	if catID != nil {
+		catIDs = []int64{*catID}
+	}
+	if err := db.AddVideo(h.db, ytID, name, catIDs); err != nil {
+		http.Redirect(w, r, "/add?error=db", http.StatusSeeOther)
+		return
+	}
+
+	http.Redirect(w, r, "/add?added=1", http.StatusSeeOther)
+}
+
+func (h *PublicHandler) AddJobStatus(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	job, err := db.GetImportJob(h.db, id)
+	if err != nil || job == nil {
+		jsonError(w, "job not found", http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"id":       job.ID,
+		"status":   job.Status,
+		"total":    job.Total,
+		"imported": job.Imported,
+		"error":    job.Error,
+	})
+}
+
+// allowAdd reports whether ip may submit /add now, updating its last-submit
+// timestamp if so. Simple in-memory per-IP throttle to deter accidental or
+// scripted spam on the public form; resets on process restart.
+func (h *PublicHandler) allowAdd(ip string) bool {
+	h.addMu.Lock()
+	defer h.addMu.Unlock()
+
+	now := time.Now()
+	if last, ok := h.addLastByIP[ip]; ok && now.Sub(last) < addRateLimit {
+		return false
+	}
+	h.addLastByIP[ip] = now
+	return true
 }
 
 func jsonError(w http.ResponseWriter, msg string, code int) {

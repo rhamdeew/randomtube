@@ -15,6 +15,7 @@
         <nav class="site-nav">
             <a href="/" class="site-nav__logo">RandomTube</a>
             <a href="/categories" class="site-nav__link">{{t .Lang "nav.categories"}}</a>
+            {{if .PublicAddEnabled}}<a href="/add" class="site-nav__link">{{t .Lang "nav.add"}}</a>{{end}}
         </nav>
     </div>
     <div class="container">
