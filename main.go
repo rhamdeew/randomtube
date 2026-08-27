@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -31,12 +32,13 @@ var assetVersion = time.Now().Unix()
 
 func main() {
 	var (
-		port      = flag.String("port", envOr("PORT", "8080"), "HTTP port")
-		dbPath    = flag.String("db", envOr("DB_PATH", "randomtube.db"), "SQLite database path")
-		apiKey    = flag.String("yt-api-key", envOr("YOUTUBE_API_KEY", ""), "YouTube Data API v3 key")
-		adminPw   = flag.String("admin-password", envOr("ADMIN_PASSWORD", ""), "Admin password (required)")
-		sessKey   = flag.String("session-secret", envOr("SESSION_SECRET", "change-me-in-production"), "Session secret")
-		adminUser = flag.String("admin-user", envOr("ADMIN_USER", "admin"), "Admin username")
+		port             = flag.String("port", envOr("PORT", "8080"), "HTTP port")
+		dbPath           = flag.String("db", envOr("DB_PATH", "randomtube.db"), "SQLite database path")
+		apiKey           = flag.String("yt-api-key", envOr("YOUTUBE_API_KEY", ""), "YouTube Data API v3 key")
+		adminPw          = flag.String("admin-password", envOr("ADMIN_PASSWORD", ""), "Admin password (required)")
+		sessKey          = flag.String("session-secret", envOr("SESSION_SECRET", "change-me-in-production"), "Session secret")
+		adminUser        = flag.String("admin-user", envOr("ADMIN_USER", "admin"), "Admin username")
+		publicAddEnabled = flag.Bool("public-add-enabled", envBoolOr("PUBLIC_ADD_ENABLED", false), "Enable the public /add page")
 	)
 	flag.Parse()
 
@@ -91,6 +93,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("load templates: %v", err)
 	}
+	tmpl.PublicAddEnabled = *publicAddEnabled
 
 	var fetcher *youtube.Fetcher
 	if *apiKey != "" {
@@ -112,9 +115,11 @@ func main() {
 	mux.HandleFunc("POST /next", pub.Next)
 	mux.HandleFunc("POST /report", pub.Report)
 	mux.HandleFunc("POST /vote", pub.Vote)
-	mux.HandleFunc("GET /add", pub.AddForm)
-	mux.HandleFunc("POST /add", pub.AddSubmit)
-	mux.HandleFunc("GET /add/job/{id}", pub.AddJobStatus)
+	if *publicAddEnabled {
+		mux.HandleFunc("GET /add", pub.AddForm)
+		mux.HandleFunc("POST /add", pub.AddSubmit)
+		mux.HandleFunc("GET /add/job/{id}", pub.AddJobStatus)
+	}
 
 	// Static files
 	staticSub, _ := fs.Sub(staticFS, "static")
@@ -176,4 +181,16 @@ func envOr(key, def string) string {
 		return v
 	}
 	return def
+}
+
+func envBoolOr(key string, def bool) bool {
+	v, ok := os.LookupEnv(key)
+	if !ok {
+		return def
+	}
+	b, err := strconv.ParseBool(v)
+	if err != nil {
+		return def
+	}
+	return b
 }

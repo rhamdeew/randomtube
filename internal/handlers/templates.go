@@ -10,6 +10,9 @@ import (
 
 type Templates struct {
 	tmpl map[string]*template.Template
+
+	// PublicAddEnabled controls whether the public /add nav link is shown.
+	PublicAddEnabled bool
 }
 
 var pages = []struct {
@@ -62,6 +65,7 @@ func (t *Templates) Render(w http.ResponseWriter, r *http.Request, name string, 
 		m = map[string]any{}
 	}
 	m["Lang"] = i18n.Detect(r)
+	m["PublicAddEnabled"] = t.PublicAddEnabled
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := tmpl.ExecuteTemplate(w, "layout", m); err != nil {

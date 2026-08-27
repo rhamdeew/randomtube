@@ -34,6 +34,7 @@ All config is via flags or env vars (env takes precedence):
 | `-session-secret` | `SESSION_SECRET` | `change-me-in-production` |
 | `-admin-user` | `ADMIN_USER` | `admin` |
 | `-port` | `PORT` | `8080` |
+| `-public-add-enabled` | `PUBLIC_ADD_ENABLED` | `false` |
 
 ## Architecture
 
