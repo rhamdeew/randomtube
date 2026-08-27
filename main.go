@@ -100,7 +100,7 @@ func main() {
 	}
 
 	store := middleware.NewSessionStore(*sessKey)
-	pub := handlers.NewPublicHandler(database, tmpl)
+	pub := handlers.NewPublicHandler(database, tmpl, fetcher)
 	adm := handlers.NewAdminHandler(database, tmpl, store, fetcher)
 
 	mux := http.NewServeMux()
@@ -112,6 +112,9 @@ func main() {
 	mux.HandleFunc("POST /next", pub.Next)
 	mux.HandleFunc("POST /report", pub.Report)
 	mux.HandleFunc("POST /vote", pub.Vote)
+	mux.HandleFunc("GET /add", pub.AddForm)
+	mux.HandleFunc("POST /add", pub.AddSubmit)
+	mux.HandleFunc("GET /add/job/{id}", pub.AddJobStatus)
 
 	// Static files
 	staticSub, _ := fs.Sub(staticFS, "static")

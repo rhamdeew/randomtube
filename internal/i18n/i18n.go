@@ -50,6 +50,7 @@ func T(lang, key string, args ...any) string {
 var catalog = map[string]map[string]string{
 	"en": {
 		"nav.categories": "Categories",
+		"nav.add":        "Add video",
 
 		"index.no_videos": "No videos available right now",
 		"like_title":      "Like",
@@ -156,9 +157,20 @@ var catalog = map[string]map[string]string{
 		"error.no_videos_selected":  "no videos selected",
 		"error.invalid_youtube_id":  "Invalid YouTube ID or link",
 		"error.db_error":            "Database error",
+
+		"public.add.title":             "Hey! Got some music?",
+		"public.add.description":       "Drop a link to a video, a playlist, or a whole channel — doesn't matter which, we'll sort it out. No need to dig through the admin panel.",
+		"public.add.examples":          "Works with stuff like:",
+		"public.add.url_label":         "Paste your link here",
+		"public.add.added":             "Nice, it's in! Thanks for the track.",
+		"public.add.job_started":       "On it! Grabbing everything now, watch the progress below…",
+		"public.add.error.invalid_url": "Hmm, doesn't look like a YouTube link. Try again?",
+		"public.add.error.no_api_key":  "Adding stuff is napping right now (no YouTube API key set up). Poke the admin.",
+		"public.add.error.rate_limit":  "Whoa, slow down! Give it a few seconds and try again.",
 	},
 	"ru": {
 		"nav.categories": "Категории",
+		"nav.add":        "Добавить видео",
 
 		"index.no_videos": "Видео временно отсутствуют",
 		"like_title":      "Нравится",
@@ -265,5 +277,15 @@ var catalog = map[string]map[string]string{
 		"error.no_videos_selected":  "нет выбранных видео",
 		"error.invalid_youtube_id":  "Неверный YouTube ID или ссылка",
 		"error.db_error":            "Ошибка базы данных",
+
+		"public.add.title":             "Привет! Есть годная музыка?",
+		"public.add.description":       "Кидай сюда ссылку на видео, плейлист или целый канал — не важно на что, мы сами разберёмся. Лезть в админку не надо, расслабься.",
+		"public.add.examples":          "Подходит что-то вроде:",
+		"public.add.url_label":         "Вставь ссылку сюда",
+		"public.add.added":             "Готово, залетело! Спасибо за трек.",
+		"public.add.job_started":       "Погнали! Тащим всё по списку, прогресс ниже…",
+		"public.add.error.invalid_url": "Хм, непохоже на ссылку с YouTube. Попробуй ещё раз?",
+		"public.add.error.no_api_key":  "Добавлялка сейчас спит (не настроен ключ YouTube API). Пните админа.",
+		"public.add.error.rate_limit":  "Полегче! Подожди пару секунд и жми ещё раз.",
 	},
 }

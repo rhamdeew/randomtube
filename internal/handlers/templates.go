@@ -18,6 +18,7 @@ var pages = []struct {
 }{
 	{"public/index.html", "public/layout.html"},
 	{"public/categories.html", "public/layout.html"},
+	{"public/add.html", "public/layout.html"},
 	{"public/error.html", "public/layout.html"},
 	{"admin/login.html", ""},
 	{"admin/dashboard.html", "admin/layout.html"},

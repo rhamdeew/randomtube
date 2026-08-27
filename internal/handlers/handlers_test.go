@@ -45,6 +45,7 @@ var testTemplates = map[string]string{
 		`{{range .Categories}}<a href="/c/{{.Code}}">{{.Name}}</a>{{end}}` +
 		`{{end}}`,
 	"public/error.html": `{{define "content"}}<p class="error">{{.Code}}: {{.Message}}</p>{{end}}`,
+	"public/add.html":   `{{define "content"}}add form{{end}}`,
 	"admin/layout.html": `{{define "layout"}}{{template "content" .}}{{end}}`,
 	"admin/login.html":  `{{define "layout"}}<form>{{if .Error}}<p>{{.Error}}</p>{{end}}</form>{{end}}`,
 	"admin/dashboard.html": `{{define "content"}}` +
@@ -93,7 +94,7 @@ func TestPublicIndex_ReturnsVideo(t *testing.T) {
 	seedVideo(t, database, "abc123", "Test Video", 1)
 
 	tmpl := newTestTemplates(t)
-	h := handlers.NewPublicHandler(database, tmpl)
+	h := handlers.NewPublicHandler(database, tmpl, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
@@ -112,7 +113,7 @@ func TestPublicIndex_ReturnsVideo(t *testing.T) {
 func TestPublicIndex_EmptyDB(t *testing.T) {
 	database := newTestDB(t)
 	tmpl := newTestTemplates(t)
-	h := handlers.NewPublicHandler(database, tmpl)
+	h := handlers.NewPublicHandler(database, tmpl, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
@@ -129,7 +130,7 @@ func TestPublicIndex_SpecificVideo_ReturnsIt(t *testing.T) {
 	seedVideo(t, database, "other456", "Other Video", 1)
 
 	tmpl := newTestTemplates(t)
-	h := handlers.NewPublicHandler(database, tmpl)
+	h := handlers.NewPublicHandler(database, tmpl, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/?v=abc123", nil)
 	w := httptest.NewRecorder()
@@ -153,7 +154,7 @@ func TestPublicIndex_SpecificVideo_NotFound_RedirectsHome(t *testing.T) {
 	seedVideo(t, database, "abc123", "Test Video", 1)
 
 	tmpl := newTestTemplates(t)
-	h := handlers.NewPublicHandler(database, tmpl)
+	h := handlers.NewPublicHandler(database, tmpl, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/?v=missing", nil)
 	w := httptest.NewRecorder()
@@ -173,7 +174,7 @@ func TestPublicIndex_SpecificVideo_Disabled_RedirectsHome(t *testing.T) {
 	seedVideo(t, database, "dead1", "Dead Video", 0)
 
 	tmpl := newTestTemplates(t)
-	h := handlers.NewPublicHandler(database, tmpl)
+	h := handlers.NewPublicHandler(database, tmpl, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/?v=dead1", nil)
 	w := httptest.NewRecorder()
@@ -194,7 +195,7 @@ func TestPublicIndex_SpecificVideo_NotFound_RedirectsToCategory(t *testing.T) {
 	seedVideo(t, database, "abc123", "Test Video", 1)
 
 	tmpl := newTestTemplates(t)
-	h := handlers.NewPublicHandler(database, tmpl)
+	h := handlers.NewPublicHandler(database, tmpl, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/c/music?v=missing", nil)
 	req.SetPathValue("code", "music")
@@ -216,7 +217,7 @@ func TestPublicNext_ReturnsJSON(t *testing.T) {
 	seedVideo(t, database, "vid2", "Video 2", 1)
 
 	tmpl := newTestTemplates(t)
-	h := handlers.NewPublicHandler(database, tmpl)
+	h := handlers.NewPublicHandler(database, tmpl, nil)
 
 	form := url.Values{"current": {"vid1"}, "cat": {""}}
 	req := httptest.NewRequest(http.MethodPost, "/next", strings.NewReader(form.Encode()))
@@ -247,7 +248,7 @@ func TestPublicReport_DisablesVideo(t *testing.T) {
 	seedVideo(t, database, "live1", "Live Video", 1)
 
 	tmpl := newTestTemplates(t)
-	h := handlers.NewPublicHandler(database, tmpl)
+	h := handlers.NewPublicHandler(database, tmpl, nil)
 
 	form := url.Values{"id": {"dead1"}, "cat": {""}}
 	req := httptest.NewRequest(http.MethodPost, "/report", strings.NewReader(form.Encode()))
@@ -283,7 +284,7 @@ func TestPublicReport_OnlyVideo_Returns404(t *testing.T) {
 	seedVideo(t, database, "only1", "Only Video", 1)
 
 	tmpl := newTestTemplates(t)
-	h := handlers.NewPublicHandler(database, tmpl)
+	h := handlers.NewPublicHandler(database, tmpl, nil)
 
 	form := url.Values{"id": {"only1"}, "cat": {""}}
 	req := httptest.NewRequest(http.MethodPost, "/report", strings.NewReader(form.Encode()))
@@ -302,7 +303,7 @@ func TestPublicCategories(t *testing.T) {
 	seedCategory(t, database, 2, "Other", "other")
 
 	tmpl := newTestTemplates(t)
-	h := handlers.NewPublicHandler(database, tmpl)
+	h := handlers.NewPublicHandler(database, tmpl, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/categories", nil)
 	w := httptest.NewRecorder()
@@ -322,7 +323,7 @@ func TestPublicVote(t *testing.T) {
 	seedVideo(t, database, "vid1", "Video 1", 1)
 
 	tmpl := newTestTemplates(t)
-	h := handlers.NewPublicHandler(database, tmpl)
+	h := handlers.NewPublicHandler(database, tmpl, nil)
 
 	form := url.Values{"id": {"vid1"}, "button": {"like"}}
 	req := httptest.NewRequest(http.MethodPost, "/vote", strings.NewReader(form.Encode()))
