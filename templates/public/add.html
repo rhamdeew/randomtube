@@ -19,7 +19,13 @@
             <div class="notification is-success is-light">{{t .Lang "public.add.added"}}</div>
             {{end}}
             {{if .Job}}
-            <div class="notification is-info is-light" data-job="{{.Job}}">{{t .Lang "public.add.job_started"}}</div>
+                {{if eq .Job.Status "done"}}
+                <div class="notification is-success is-light">{{t .Lang "public.add.job_done"}} ({{.Job.Imported}})</div>
+                {{else if eq .Job.Status "error"}}
+                <div class="notification is-danger is-light">{{t .Lang "public.add.job_error"}} {{.Job.Error}}</div>
+                {{else}}
+                <div class="notification is-info is-light" data-job="{{.Job.ID}}">{{t .Lang "public.add.job_started"}}</div>
+                {{end}}
             {{end}}
 
             <form method="post" action="/add">

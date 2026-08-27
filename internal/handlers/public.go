@@ -220,12 +220,19 @@ func (h *PublicHandler) AddForm(w http.ResponseWriter, r *http.Request) {
 		errMsg = i18n.T(lang, "error.db_error")
 	}
 
+	var job *db.ImportJob
+	if s := r.URL.Query().Get("job"); s != "" {
+		if id, err := strconv.ParseInt(s, 10, 64); err == nil {
+			job, _ = db.GetImportJob(h.db, id)
+		}
+	}
+
 	h.templates.Render(w, r, "public/add.html", map[string]any{
 		"Categories": cats,
 		"Jobs":       jobs,
 		"Error":      errMsg,
 		"Added":      r.URL.Query().Get("added") == "1",
-		"Job":        r.URL.Query().Get("job"),
+		"Job":        job,
 	})
 }
 
