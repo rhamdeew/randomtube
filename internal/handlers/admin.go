@@ -65,6 +65,7 @@ func (h *AdminHandler) Logout(w http.ResponseWriter, r *http.Request) {
 
 func (h *AdminHandler) Dashboard(w http.ResponseWriter, r *http.Request) {
 	total, enabled, disabled, _ := db.CountVideos(h.db)
+	totalViews, _ := db.TotalViews(h.db)
 	cats, _ := db.ListCategories(h.db)
 	jobs, _ := db.ListImportJobs(h.db)
 
@@ -72,6 +73,7 @@ func (h *AdminHandler) Dashboard(w http.ResponseWriter, r *http.Request) {
 		"Total":      total,
 		"Enabled":    enabled,
 		"Disabled":   disabled,
+		"TotalViews": totalViews,
 		"Categories": cats,
 		"Jobs":       jobs,
 	})

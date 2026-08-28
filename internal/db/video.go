@@ -291,6 +291,11 @@ func CountVideos(db *sql.DB) (total, enabled, disabled int, err error) {
 	return
 }
 
+func TotalViews(db *sql.DB) (total int64, err error) {
+	err = db.QueryRow(`SELECT COALESCE(SUM(views), 0) FROM videos`).Scan(&total)
+	return
+}
+
 func VideoExists(db *sql.DB, youtubeID string) (bool, error) {
 	var n int
 	err := db.QueryRow("SELECT COUNT(*) FROM videos WHERE youtube_id = ?", youtubeID).Scan(&n)
