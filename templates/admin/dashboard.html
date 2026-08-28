@@ -2,31 +2,31 @@
 <h1 class="title">{{t .Lang "admin.dashboard.title"}}</h1>
 
 <div class="columns">
-    <div class="column is-3">
+    <div class="column is-one-fifth">
         <div class="box has-text-centered">
             <p class="heading">{{t $.Lang "admin.dashboard.total"}}</p>
             <p class="title">{{.Total}}</p>
         </div>
     </div>
-    <div class="column is-3">
+    <div class="column is-one-fifth">
         <div class="box has-text-centered">
             <p class="heading">{{t $.Lang "admin.dashboard.enabled"}}</p>
             <p class="title has-text-success">{{.Enabled}}</p>
         </div>
     </div>
-    <div class="column is-3">
+    <div class="column is-one-fifth">
         <div class="box has-text-centered">
             <p class="heading">{{t $.Lang "admin.dashboard.disabled"}}</p>
             <p class="title has-text-danger">{{.Disabled}}</p>
         </div>
     </div>
-    <div class="column is-3">
+    <div class="column is-one-fifth">
         <div class="box has-text-centered">
             <p class="heading">{{t $.Lang "admin.dashboard.categories_count"}}</p>
             <p class="title">{{len .Categories}}</p>
         </div>
     </div>
-    <div class="column is-3">
+    <div class="column is-one-fifth">
         <div class="box has-text-centered">
             <p class="heading">{{t $.Lang "admin.dashboard.total_views"}}</p>
             <p class="title">{{.TotalViews}}</p>
