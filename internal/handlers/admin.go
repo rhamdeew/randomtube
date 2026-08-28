@@ -150,6 +150,11 @@ func (h *AdminHandler) VideoAction(w http.ResponseWriter, r *http.Request) {
 	switch action {
 	case "enable":
 		err = db.BulkSetEnabled(h.db, ids, true)
+		if err == nil {
+			for _, id := range ids {
+				_ = db.ClearVideoReports(h.db, id)
+			}
+		}
 	case "disable":
 		err = db.BulkSetEnabled(h.db, ids, false)
 	case "delete":

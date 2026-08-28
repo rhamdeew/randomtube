@@ -111,6 +111,14 @@ func (h *PublicHandler) Next(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// reportThreshold is how many distinct IPs must report a video as broken
+// before it's disabled site-wide. A single report can be a fluke (bad
+// connection, a one-off YouTube bot check, or a video that's merely
+// region-blocked for that one visitor) — the Player API gives no reliable
+// way to tell those apart from a genuinely dead video, so we wait for
+// several independent reporters instead of trusting the first one.
+const reportThreshold = 5
+
 func (h *PublicHandler) Report(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -125,12 +133,17 @@ func (h *PublicHandler) Report(w http.ResponseWriter, r *http.Request) {
 
 	lang := i18n.Detect(r)
 
-	if err := db.DisableVideo(h.db, youtubeID); err != nil {
-		jsonError(w, i18n.T(lang, "error.server_error"), http.StatusInternalServerError)
-		return
+	if video, err := db.GetVideoByYoutubeID(h.db, youtubeID); err == nil && video != nil {
+		if err := db.AddVideoReport(h.db, video.ID, realIP(r)); err == nil {
+			if count, err := db.CountVideoReporters(h.db, video.ID); err == nil && count >= reportThreshold {
+				_ = db.DisableVideo(h.db, youtubeID)
+			}
+		}
 	}
 
-	// Return next video automatically
+	// Return next video automatically — regardless of whether the report
+	// threshold was reached, this visitor's player still errored and
+	// shouldn't be handed the same broken-for-them video again.
 	catCode := r.FormValue("cat")
 	video, err := db.RandomVideo(h.db, catCode, youtubeID)
 	if err != nil || video == nil {

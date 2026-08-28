@@ -242,7 +242,18 @@ func TestPublicNext_ReturnsJSON(t *testing.T) {
 	}
 }
 
-func TestPublicReport_DisablesVideo(t *testing.T) {
+func reportFrom(t *testing.T, h *handlers.PublicHandler, youtubeID, ip string) *httptest.ResponseRecorder {
+	t.Helper()
+	form := url.Values{"id": {youtubeID}, "cat": {""}}
+	req := httptest.NewRequest(http.MethodPost, "/report", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("X-Real-IP", ip)
+	w := httptest.NewRecorder()
+	h.Report(w, req)
+	return w
+}
+
+func TestPublicReport_SingleReport_DoesNotDisable(t *testing.T) {
 	database := newTestDB(t)
 	seedVideo(t, database, "dead1", "Dead Video", 1)
 	seedVideo(t, database, "live1", "Live Video", 1)
@@ -250,32 +261,73 @@ func TestPublicReport_DisablesVideo(t *testing.T) {
 	tmpl := newTestTemplates(t)
 	h := handlers.NewPublicHandler(database, tmpl, nil)
 
-	form := url.Values{"id": {"dead1"}, "cat": {""}}
-	req := httptest.NewRequest(http.MethodPost, "/report", strings.NewReader(form.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	w := httptest.NewRecorder()
-	h.Report(w, req)
-
+	w := reportFrom(t, h, "dead1", "1.1.1.1")
 	if w.Result().StatusCode != http.StatusOK {
 		t.Fatalf("expected 200, got %d", w.Result().StatusCode)
 	}
 
-	// dead1 should now be disabled
+	// A single report shouldn't be enough to disable the video — one
+	// visitor's player error could be a fluke, geo-block, or bot check.
 	v, _ := db.GetVideoByYoutubeID(database, "dead1")
 	if v == nil {
 		t.Fatal("video should still exist")
 	}
-	if v.Enabled {
-		t.Error("reported video should be disabled")
+	if !v.Enabled {
+		t.Error("a single report should not disable the video")
 	}
 
-	// response should contain next video
+	// The reporting visitor should still get moved on to the next video.
 	var data map[string]any
 	if err := json.NewDecoder(w.Body).Decode(&data); err != nil {
 		t.Fatalf("Decode: %v", err)
 	}
 	if id, _ := data["id"].(string); id != "live1" {
 		t.Errorf("expected next video live1, got %q", id)
+	}
+}
+
+func TestPublicReport_SameIPRepeated_DoesNotCountTwice(t *testing.T) {
+	database := newTestDB(t)
+	seedVideo(t, database, "dead1", "Dead Video", 1)
+	seedVideo(t, database, "live1", "Live Video", 1)
+
+	tmpl := newTestTemplates(t)
+	h := handlers.NewPublicHandler(database, tmpl, nil)
+
+	for i := 0; i < 4; i++ {
+		reportFrom(t, h, "dead1", "1.1.1.1")
+	}
+
+	v, _ := db.GetVideoByYoutubeID(database, "dead1")
+	if v == nil || !v.Enabled {
+		t.Error("repeated reports from the same IP should not disable the video")
+	}
+}
+
+func TestPublicReport_FiveDistinctIPs_DisablesVideo(t *testing.T) {
+	database := newTestDB(t)
+	seedVideo(t, database, "dead1", "Dead Video", 1)
+	seedVideo(t, database, "live1", "Live Video", 1)
+
+	tmpl := newTestTemplates(t)
+	h := handlers.NewPublicHandler(database, tmpl, nil)
+
+	ips := []string{"1.1.1.1", "2.2.2.2", "3.3.3.3", "4.4.4.4"}
+	for _, ip := range ips {
+		reportFrom(t, h, "dead1", ip)
+	}
+	v, _ := db.GetVideoByYoutubeID(database, "dead1")
+	if v == nil || !v.Enabled {
+		t.Fatal("video should still be enabled below the report threshold")
+	}
+
+	reportFrom(t, h, "dead1", "5.5.5.5")
+	v, _ = db.GetVideoByYoutubeID(database, "dead1")
+	if v == nil {
+		t.Fatal("video should still exist")
+	}
+	if v.Enabled {
+		t.Error("video should be disabled once 5 distinct IPs reported it")
 	}
 }
 
@@ -505,5 +557,44 @@ func TestAdminVideoAction_Disable(t *testing.T) {
 	v, _ := db.GetVideoByYoutubeID(database, "v1")
 	if v.Enabled {
 		t.Error("video should be disabled after action")
+	}
+}
+
+func TestAdminVideoAction_Enable_ClearsReportHistory(t *testing.T) {
+	database := newTestDB(t)
+	seedVideo(t, database, "v1", "V1", 0)
+
+	var videoID int64
+	if err := database.QueryRow("SELECT id FROM videos WHERE youtube_id = 'v1'").Scan(&videoID); err != nil {
+		t.Fatalf("Scan: %v", err)
+	}
+	// Simulate the video having already accumulated enough reports to have
+	// been auto-disabled once.
+	for _, ip := range []string{"1.1.1.1", "2.2.2.2"} {
+		if err := db.AddVideoReport(database, videoID, ip); err != nil {
+			t.Fatalf("AddVideoReport: %v", err)
+		}
+	}
+
+	tmpl := newTestTemplates(t)
+	store := middleware.NewSessionStore("test-secret")
+	h := handlers.NewAdminHandler(database, tmpl, store, nil)
+
+	form := url.Values{
+		"action": {"enable"},
+		"ids":    {fmt.Sprint(videoID)},
+	}
+	req := httptest.NewRequest(http.MethodPost, "/admin/videos/action", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Referer", "/admin/videos")
+	w := httptest.NewRecorder()
+	h.VideoAction(w, req)
+
+	count, err := db.CountVideoReporters(database, videoID)
+	if err != nil {
+		t.Fatalf("CountVideoReporters: %v", err)
+	}
+	if count != 0 {
+		t.Errorf("expected report history cleared after manual re-enable, got %d reports", count)
 	}
 }

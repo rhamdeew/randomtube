@@ -37,6 +37,14 @@ CREATE TABLE IF NOT EXISTS votes (
 
 CREATE INDEX IF NOT EXISTS idx_votes_video_ip ON votes(video_id, ip);
 
+CREATE TABLE IF NOT EXISTS video_reports (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    video_id   INTEGER NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
+    ip         TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (video_id, ip)
+);
+
 CREATE TABLE IF NOT EXISTS import_jobs (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     url         TEXT NOT NULL,
