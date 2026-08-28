@@ -178,6 +178,92 @@ func TestFetchAll_Playlist_SkipsUnavailableVideos(t *testing.T) {
 	}
 }
 
+const playlistNotFoundBody = `{"error":{"code":404,"message":"The playlist identified with the request's <code>playlistId</code> parameter cannot be found.","errors":[{"message":"The playlist identified with the request's <code>playlistId</code> parameter cannot be found.","domain":"youtube.playlistItem","reason":"playlistNotFound","location":"playlistId","locationType":"parameter"}]}}`
+
+func TestFetchAll_PrivatePlaylistWithSeedVideo_FallsBackToSeedVideo(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case strings.Contains(r.URL.Path, "/playlistItems"):
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(playlistNotFoundBody))
+		case strings.Contains(r.URL.Path, "/videos"):
+			_, _ = w.Write([]byte(`{"items":[{"id":"6p6PcFFUm5I","snippet":{"title":"Seed Video"}}]}`))
+		}
+	}))
+	defer server.Close()
+
+	f := youtube.New("test-key")
+	f.BaseURL = server.URL
+
+	// list=LL is YouTube's own "Liked videos" playlist — never resolvable via
+	// API key, regardless of whose it is.
+	src, err := youtube.ParseURL("https://www.youtube.com/watch?v=6p6PcFFUm5I&list=LL&index=4")
+	if err != nil {
+		t.Fatalf("ParseURL: %v", err)
+	}
+
+	var got []youtube.VideoItem
+	total, err := f.FetchAll(context.Background(), src, func(batch []youtube.VideoItem) {
+		got = append(got, batch...)
+	})
+	if err != nil {
+		t.Fatalf("FetchAll: %v", err)
+	}
+	if total != 1 || len(got) != 1 || got[0].YoutubeID != "6p6PcFFUm5I" {
+		t.Fatalf("expected fallback to the single seed video, got total=%d items=%+v", total, got)
+	}
+}
+
+func TestFetchAll_DeletedPlaylistWithoutSeedVideo_ReturnsError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(playlistNotFoundBody))
+	}))
+	defer server.Close()
+
+	f := youtube.New("test-key")
+	f.BaseURL = server.URL
+
+	// A bare playlist link (no accompanying v=) has nothing to fall back to,
+	// so a genuinely missing playlist must still surface as an error.
+	src, err := youtube.ParseURL("https://www.youtube.com/playlist?list=PLdeaddeaddead")
+	if err != nil {
+		t.Fatalf("ParseURL: %v", err)
+	}
+
+	_, err = f.FetchAll(context.Background(), src, func([]youtube.VideoItem) {})
+	if err == nil {
+		t.Fatal("expected an error for a genuinely missing playlist, got nil")
+	}
+}
+
+func TestFetchAll_OtherPlaylistErrorWithSeedVideo_StillReturnsError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/playlistItems") {
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = w.Write([]byte(`{"error":{"code":403,"message":"quotaExceeded"}}`))
+		}
+	}))
+	defer server.Close()
+
+	f := youtube.New("test-key")
+	f.BaseURL = server.URL
+
+	// Only the specific "playlist doesn't exist" case should fall back to the
+	// seed video — a real failure (quota, auth, ...) must not be swallowed.
+	src, err := youtube.ParseURL("https://www.youtube.com/watch?v=abc123&list=PLxxx123")
+	if err != nil {
+		t.Fatalf("ParseURL: %v", err)
+	}
+
+	_, err = f.FetchAll(context.Background(), src, func([]youtube.VideoItem) {})
+	if err == nil {
+		t.Fatal("expected the quota error to propagate, got nil")
+	}
+}
+
 func TestFetchVideosInfo_ExistingAndMissing(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

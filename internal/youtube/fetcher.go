@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -97,6 +98,15 @@ func (f *Fetcher) FetchAll(ctx context.Context, src *Source, onBatch func([]Vide
 		}
 		total, err := f.fetchPlaylist(ctx, src.ID, maxItems, onBatch)
 		if err != nil {
+			// A "watch?v=...&list=..." URL can point at a playlist we have no
+			// way to read via API key — e.g. YouTube's own per-user "Liked
+			// videos" (list=LL) or "Watch later" (list=WL), which 404 as
+			// playlistNotFound no matter who's asking. When that happens and
+			// we still have the seed video from the URL, fall back to just
+			// importing that one video instead of failing the whole import.
+			if src.VideoID != "" && isPlaylistNotFound(err) {
+				return f.fetchSeedVideo(ctx, src.VideoID, onBatch)
+			}
 			return total, err
 		}
 		if src.VideoID != "" {
@@ -315,6 +325,29 @@ func (f *Fetcher) fetchPlaylist(ctx context.Context, playlistID string, maxItems
 	return total, nil
 }
 
+// apiError is returned by get for a non-200 YouTube API response, keeping
+// the status code around so callers can react to specific failures (e.g.
+// playlistNotFound) instead of matching on the error string.
+type apiError struct {
+	status int
+	body   []byte
+}
+
+func (e *apiError) Error() string {
+	return fmt.Sprintf("youtube API %d: %s", e.status, e.body)
+}
+
+// isPlaylistNotFound reports whether err is YouTube's 404 for a playlistId
+// it can't resolve (deleted, or one only accessible to its owner, like the
+// built-in "Liked videos"/"Watch later" playlists).
+func isPlaylistNotFound(err error) bool {
+	var ae *apiError
+	if !errors.As(err, &ae) {
+		return false
+	}
+	return ae.status == http.StatusNotFound && strings.Contains(string(ae.body), "playlistNotFound")
+}
+
 func (f *Fetcher) get(ctx context.Context, endpoint string, params url.Values) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint+"?"+params.Encode(), nil)
 	if err != nil {
@@ -330,7 +363,7 @@ func (f *Fetcher) get(ctx context.Context, endpoint string, params url.Values) (
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("youtube API %d: %s", resp.StatusCode, body)
+		return nil, &apiError{status: resp.StatusCode, body: body}
 	}
 	return body, nil
 }
