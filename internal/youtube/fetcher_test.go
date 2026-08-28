@@ -95,7 +95,14 @@ func TestFetchAll_Playlist_IncludesSeedVideo(t *testing.T) {
 				{"snippet":{"title":"Playlist Video","resourceId":{"videoId":"plvid1"}}}
 			]}`))
 		case strings.Contains(r.URL.Path, "/videos"):
-			_, _ = w.Write([]byte(`{"items":[{"id":"seedvid1","snippet":{"title":"Seed Video"}}]}`))
+			titles := map[string]string{"seedvid1": "Seed Video", "plvid1": "Playlist Video"}
+			var items []string
+			for _, id := range strings.Split(r.URL.Query().Get("id"), ",") {
+				if title, ok := titles[id]; ok {
+					items = append(items, `{"id":"`+id+`","snippet":{"title":"`+title+`"}}`)
+				}
+			}
+			_, _ = w.Write([]byte(`{"items":[` + strings.Join(items, ",") + `]}`))
 		}
 	}))
 	defer server.Close()
@@ -128,6 +135,46 @@ func TestFetchAll_Playlist_IncludesSeedVideo(t *testing.T) {
 	}
 	if ids["seedvid1"] != "Seed Video" {
 		t.Errorf("missing seed video, got %+v", got)
+	}
+}
+
+func TestFetchAll_Playlist_SkipsUnavailableVideos(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case strings.Contains(r.URL.Path, "/playlistItems"):
+			_, _ = w.Write([]byte(`{"items":[
+				{"snippet":{"title":"Alive Video","resourceId":{"videoId":"alive1"}}},
+				{"snippet":{"title":"Deleted video","resourceId":{"videoId":"gone1"}}}
+			]}`))
+		case strings.Contains(r.URL.Path, "/videos"):
+			// Only "alive1" actually exists on YouTube; "gone1" was removed
+			// (copyright takedown, privacy, etc.) but playlistItems still lists it.
+			_, _ = w.Write([]byte(`{"items":[{"id":"alive1","snippet":{"title":"Alive Video"}}]}`))
+		}
+	}))
+	defer server.Close()
+
+	f := youtube.New("test-key")
+	f.BaseURL = server.URL
+
+	src, err := youtube.ParseURL("https://www.youtube.com/playlist?list=PLxxx123")
+	if err != nil {
+		t.Fatalf("ParseURL: %v", err)
+	}
+
+	var got []youtube.VideoItem
+	total, err := f.FetchAll(context.Background(), src, func(batch []youtube.VideoItem) {
+		got = append(got, batch...)
+	})
+	if err != nil {
+		t.Fatalf("FetchAll: %v", err)
+	}
+	if total != 1 {
+		t.Fatalf("expected 1 video (unavailable one filtered out), got %d: %+v", total, got)
+	}
+	if len(got) != 1 || got[0].YoutubeID != "alive1" {
+		t.Errorf("expected only alive1, got %+v", got)
 	}
 }
 

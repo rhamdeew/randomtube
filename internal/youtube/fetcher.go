@@ -268,8 +268,28 @@ func (f *Fetcher) fetchPlaylist(ctx context.Context, playlistID string, maxItems
 			})
 		}
 		if len(batch) > 0 {
-			onBatch(batch)
-			total += len(batch)
+			// playlistItems.list happily lists videos that are private, deleted,
+			// or region-blocked (sometimes as literal "Deleted video" /
+			// "Private video" placeholders); cross-check against videos.list so
+			// we don't import things the embedded player can't actually play.
+			ids := make([]string, len(batch))
+			for i, v := range batch {
+				ids[i] = v.YoutubeID
+			}
+			available, err := f.FetchVideosInfo(ctx, ids)
+			if err != nil {
+				return total, err
+			}
+			playable := batch[:0]
+			for _, v := range batch {
+				if _, ok := available[v.YoutubeID]; ok {
+					playable = append(playable, v)
+				}
+			}
+			if len(playable) > 0 {
+				onBatch(playable)
+				total += len(playable)
+			}
 		}
 
 		if data.NextPageToken == "" {
