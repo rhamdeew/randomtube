@@ -58,6 +58,15 @@ var catalog = map[string]map[string]string{
 		"next_button":     "More",
 		"share_button":    "Share",
 
+		"player.trouble":            "Video won't load?",
+		"player.modal_title":        "Playback problems",
+		"player.nocookie_text":      "YouTube sometimes asks you to sign in to prove you're not a bot. Sign-in doesn't work in the privacy-enhanced player (youtube-nocookie.com) we use by default. Switch to the regular YouTube player to sign in.",
+		"player.nocookie_effects":   "What changes: YouTube will set cookies, and watched videos will appear in your YouTube history and may affect your recommendations. The setting is stored in this browser only, and you can switch back here anytime.",
+		"player.switch_to_youtube":  "Switch to YouTube player",
+		"player.youtube_text":       "You're using the regular YouTube player: watched videos go to your YouTube history. You can switch back to the privacy-enhanced player (youtube-nocookie.com).",
+		"player.switch_to_nocookie": "Switch back to private player",
+		"player.cancel":             "Cancel",
+
 		"categories.none": "No categories available right now",
 
 		"error.home_link": "Back to home",
@@ -180,6 +189,15 @@ var catalog = map[string]map[string]string{
 		"dislike_title":   "Не нравится",
 		"next_button":     "Ещё",
 		"share_button":    "Поделиться",
+
+		"player.trouble":            "Видео не загружается?",
+		"player.modal_title":        "Проблемы с воспроизведением",
+		"player.nocookie_text":      "YouTube иногда просит войти в аккаунт, чтобы подтвердить, что вы не бот. В приватном плеере (youtube-nocookie.com), который мы используем по умолчанию, вход не работает. Переключитесь на обычный плеер YouTube, чтобы войти.",
+		"player.nocookie_effects":   "Что изменится: YouTube сможет сохранять cookies, просмотренные видео попадут в вашу историю YouTube и могут влиять на рекомендации. Настройка хранится только в этом браузере, вернуть обратно можно здесь же.",
+		"player.switch_to_youtube":  "Переключить на YouTube",
+		"player.youtube_text":       "Сейчас используется обычный плеер YouTube: просмотренные видео попадают в вашу историю YouTube. Можно вернуться к приватному плееру (youtube-nocookie.com).",
+		"player.switch_to_nocookie": "Вернуть приватный плеер",
+		"player.cancel":             "Отмена",
 
 		"categories.none": "Категории временно отсутствуют",
 

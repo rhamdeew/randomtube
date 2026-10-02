@@ -48,6 +48,18 @@ body {
     text-align: center;
 }
 
+/* Low-key troubleshooting link under the player controls */
+.player-trouble {
+    background: none;
+    border: 0;
+    padding: 0.25rem;
+    margin-top: 0.25rem;
+    color: #aaa;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+.player-trouble:hover { color: #3273dc; text-decoration: underline; }
+
 @media (max-width: 768px) {
     .site-nav { padding: 1rem 0; }
     .column.is-4 { padding: 0.25rem; }

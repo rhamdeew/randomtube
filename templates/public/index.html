@@ -38,7 +38,35 @@
         <div class="has-text-centered is-size-7 video-meta">
             {{if .Video.Name}}<span id="video-name">{{.Video.Name}}</span>{{end}}
         </div>
+        <div class="has-text-centered">
+            <button type="button" class="player-trouble" id="btn-player-trouble">{{t .Lang "player.trouble"}}</button>
+        </div>
     </div>
+</div>
+
+<div class="modal" id="player-modal">
+    <div class="modal-background" data-close></div>
+    <div class="modal-content">
+        <div class="box">
+            <p class="title is-5">{{t .Lang "player.modal_title"}}</p>
+            <div data-mode="nocookie">
+                <p class="mb-3">{{t .Lang "player.nocookie_text"}}</p>
+                <p class="mb-4 is-size-7 has-text-grey">{{t .Lang "player.nocookie_effects"}}</p>
+                <div class="buttons is-right">
+                    <button type="button" class="button" data-close>{{t .Lang "player.cancel"}}</button>
+                    <button type="button" class="button is-primary" data-switch="youtube">{{t .Lang "player.switch_to_youtube"}}</button>
+                </div>
+            </div>
+            <div data-mode="youtube" class="is-hidden">
+                <p class="mb-4">{{t .Lang "player.youtube_text"}}</p>
+                <div class="buttons is-right">
+                    <button type="button" class="button" data-close>{{t .Lang "player.cancel"}}</button>
+                    <button type="button" class="button is-primary" data-switch="nocookie">{{t .Lang "player.switch_to_nocookie"}}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <button type="button" class="modal-close is-large" aria-label="close" data-close></button>
 </div>
 
 <script>

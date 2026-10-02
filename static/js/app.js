@@ -4,22 +4,52 @@
     if (!window.RT || !RT.currentID) return;
 
     var iframe = document.getElementById('ytplayer');
-    var NOCOOKIE = 'https://www.youtube-nocookie.com';
+    var HOSTS = {
+        nocookie: 'https://www.youtube-nocookie.com',
+        youtube: 'https://www.youtube.com'
+    };
+    var PLAYER_KEY = 'rt.player';
     var COPIED_TEXT = document.documentElement.lang === 'ru' ? 'Скопировано' : 'Copied';
 
+    // Privacy-enhanced player by default; the regular one is an opt-in fallback
+    // for users YouTube asks to sign in (sign-in doesn't work on nocookie).
+    var playerMode = readPlayerMode();
+    var playerOrigin = HOSTS[playerMode];
+
+    function readPlayerMode() {
+        try {
+            return localStorage.getItem(PLAYER_KEY) === 'youtube' ? 'youtube' : 'nocookie';
+        } catch (err) {
+            return 'nocookie';
+        }
+    }
+
+    function setPlayerMode(mode) {
+        playerMode = mode;
+        playerOrigin = HOSTS[mode];
+        try {
+            if (mode === 'youtube') localStorage.setItem(PLAYER_KEY, mode);
+            else localStorage.removeItem(PLAYER_KEY);
+        } catch (err) {}
+        setIframeSrc(RT.currentID);
+    }
+
     // Inject origin into iframe src so YouTube knows where to send postMessage events
-    iframe.src = NOCOOKIE + '/embed/' + RT.currentID +
-        '?autoplay=1&rel=0&enablejsapi=1&origin=' + encodeURIComponent(window.location.origin);
+    function setIframeSrc(id) {
+        iframe.src = playerOrigin + '/embed/' + id +
+            '?autoplay=1&rel=0&enablejsapi=1&origin=' + encodeURIComponent(window.location.origin);
+    }
+    setIframeSrc(RT.currentID);
 
     iframe.addEventListener('load', function () {
         iframe.contentWindow.postMessage(
             JSON.stringify({ event: 'listening' }),
-            NOCOOKIE
+            playerOrigin
         );
     });
 
     window.addEventListener('message', function (e) {
-        if (e.origin !== NOCOOKIE) return;
+        if (e.origin !== playerOrigin) return;
         try {
             var data = JSON.parse(e.data);
             // YouTube sends state changes in two formats
@@ -63,7 +93,7 @@
         // Use postMessage command to avoid full iframe reload
         iframe.contentWindow.postMessage(
             JSON.stringify({ event: 'command', func: 'loadVideoById', args: [id] }),
-            NOCOOKIE
+            playerOrigin
         );
         var nameEl = document.getElementById('video-name');
         if (nameEl) nameEl.textContent = name || '';
@@ -83,6 +113,36 @@
 
     document.getElementById('btn-share').addEventListener('click', function () {
         share();
+    });
+
+    var modal = document.getElementById('player-modal');
+
+    function openPlayerModal() {
+        var blocks = modal.querySelectorAll('[data-mode]');
+        for (var i = 0; i < blocks.length; i++) {
+            blocks[i].classList.toggle('is-hidden', blocks[i].getAttribute('data-mode') !== playerMode);
+        }
+        modal.classList.add('is-active');
+    }
+
+    function closePlayerModal() {
+        modal.classList.remove('is-active');
+    }
+
+    document.getElementById('btn-player-trouble').addEventListener('click', openPlayerModal);
+
+    modal.addEventListener('click', function (e) {
+        var sw = e.target.closest('[data-switch]');
+        if (sw) {
+            setPlayerMode(sw.getAttribute('data-switch'));
+            closePlayerModal();
+        } else if (e.target.closest('[data-close]')) {
+            closePlayerModal();
+        }
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closePlayerModal();
     });
 
     function share() {
