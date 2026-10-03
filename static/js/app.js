@@ -97,6 +97,7 @@
         );
         var nameEl = document.getElementById('video-name');
         if (nameEl) nameEl.textContent = name || '';
+        resetVoteState();
     }
 
     document.getElementById('btn-next').addEventListener('click', function () {
@@ -160,8 +161,34 @@
         }
     }
 
+    var voteBtns = {
+        like: document.getElementById('btn-like'),
+        dislike: document.getElementById('btn-dislike')
+    };
+
+    for (var b in voteBtns) voteBtns[b].setAttribute('data-title', voteBtns[b].title);
+
+    function resetVoteState() {
+        for (var k in voteBtns) {
+            voteBtns[k].classList.remove('is-voted', 'vote-denied');
+            voteBtns[k].title = voteBtns[k].getAttribute('data-title');
+        }
+    }
+
     function vote(button) {
-        post('/vote', { id: RT.currentID, button: button }, function () {});
+        var btn = voteBtns[button];
+        post('/vote', { id: RT.currentID, button: button }, function (data) {
+            if (!data || data.error) return;
+            if (data.recorded) {
+                btn.classList.add('is-voted');
+            } else {
+                // Already voted today: brief shake, server message as tooltip.
+                btn.classList.remove('vote-denied');
+                void btn.offsetWidth; // restart the animation
+                btn.classList.add('vote-denied');
+                if (data.message) btn.title = data.message;
+            }
+        });
     }
 
     function post(url, data, cb) {

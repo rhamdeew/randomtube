@@ -183,7 +183,7 @@ func (h *PublicHandler) Vote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !ok {
-		jsonOK(w, i18n.T(lang, "error.vote_once_per_day"))
+		jsonVote(w, i18n.T(lang, "error.vote_once_per_day"), false)
 		return
 	}
 
@@ -199,7 +199,7 @@ func (h *PublicHandler) Vote(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, i18n.T(lang, "error.save_error"), http.StatusInternalServerError)
 		return
 	}
-	jsonOK(w, i18n.T(lang, "vote.recorded"))
+	jsonVote(w, i18n.T(lang, "vote.recorded"), true)
 }
 
 func realIP(r *http.Request) string {
@@ -356,7 +356,8 @@ func jsonError(w http.ResponseWriter, msg string, code int) {
 	_ = json.NewEncoder(w).Encode(map[string]string{"error": msg})
 }
 
-func jsonOK(w http.ResponseWriter, msg string) {
+// jsonVote tells the client whether the vote was counted, so it can show feedback.
+func jsonVote(w http.ResponseWriter, msg string, recorded bool) {
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]string{"message": msg})
+	_ = json.NewEncoder(w).Encode(map[string]any{"message": msg, "recorded": recorded})
 }

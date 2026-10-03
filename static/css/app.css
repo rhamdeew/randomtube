@@ -60,6 +60,19 @@ body {
 }
 .player-trouble:hover { color: #3273dc; text-decoration: underline; }
 
+/* Vote feedback: tint the chosen thumb, shake when the vote was refused */
+#btn-like.is-voted { color: #48c78e; border-color: #48c78e; }
+#btn-dislike.is-voted { color: #f14668; border-color: #f14668; }
+.is-voted i { animation: vote-pop 0.3s ease-out; }
+.vote-denied { animation: vote-shake 0.35s; }
+@keyframes vote-pop {
+    50% { transform: scale(1.3); }
+}
+@keyframes vote-shake {
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+}
+
 @media (max-width: 768px) {
     .site-nav { padding: 1rem 0; }
     .column.is-4 { padding: 0.25rem; }
